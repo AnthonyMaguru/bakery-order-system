@@ -1,0 +1,29 @@
+name: Feature / task
+description: A piece of work from the work plan
+labels: ["task"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [mobile, dashboard, backend, docs]
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options: [MVP, Stretch]
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      placeholder: "e.g. a customer can submit a standard order and staff see it on the dashboard"

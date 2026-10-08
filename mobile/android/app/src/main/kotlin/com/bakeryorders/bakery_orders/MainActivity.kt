@@ -1,0 +1,5 @@
+package com.bakeryorders.bakery_orders
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

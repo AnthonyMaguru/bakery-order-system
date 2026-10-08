@@ -1,0 +1,162 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// First draft of the data model (concept paper 3.7). Change it freely in
+// week 2, then run `npm run db:migrate` to create a migration.
+// Enum values must stay in sync with src/modules/orders/orders.schemas.ts.
+// ---------------------------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  STAFF
+}
+
+enum OrderType {
+  STANDARD
+  CUSTOM
+  BULK
+}
+
+enum OrderStatus {
+  SUBMITTED
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum Fulfilment {
+  PICKUP
+  DELIVERY
+}
+
+// The app records payment status only; it never processes payments.
+enum PaymentStatus {
+  UNPAID
+  DEPOSIT_PAID
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+}
+
+model User {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique
+  email       String?
+  name        String?
+  phone       String?
+  role        Role     @default(CUSTOMER)
+  // Firebase Cloud Messaging device/browser tokens for push notifications.
+  fcmTokens   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders     Order[]
+  quotations Quotation[]
+  comments   OrderComment[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  // e.g. "cake" or "add-on"
+  category     String
+  basePriceUgx Int?
+  imageUrl     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  customerId      String
+  type            OrderType
+  status          OrderStatus    @default(SUBMITTED)
+  occasion        String?
+  flavour         String?
+  icing           String?
+  size            String?
+  colours         String?
+  theme           String?
+  inscription     String?
+  notes           String?
+  budgetUgx       Int?
+  dueDate         DateTime
+  fulfilment      Fulfilment
+  deliveryAddress String?
+  paymentStatus   PaymentStatus  @default(UNPAID)
+  paymentMethod   PaymentMethod?
+  amountPaidUgx   Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  customer   User               @relation(fields: [customerId], references: [id])
+  items      OrderItem[]
+  images     InspirationImage[]
+  quotations Quotation[]
+  comments   OrderComment[]
+
+  @@index([status, dueDate])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int    @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+// Images are compressed on the phone and uploaded to Firebase Storage; only the URL is stored here.
+model InspirationImage {
+  id        String   @id @default(cuid())
+  orderId   String
+  url       String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Quotation {
+  id          String   @id @default(cuid())
+  orderId     String
+  amountUgx   Int
+  note        String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id])
+}
+
+// MVP substitute for in-app messaging: a simple notes thread per order.
+model OrderComment {
+  id        String   @id @default(cuid())
+  orderId   String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+}
