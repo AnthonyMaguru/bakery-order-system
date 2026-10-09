@@ -1,0 +1,7 @@
+# Keep line endings consistent between Windows, macOS and Linux.
+* text=auto eol=lf
+
+# Windows scripts must keep Windows line endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

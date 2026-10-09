@@ -26,7 +26,9 @@ bakery-order-system/
 
 ## Getting started
 
-Prerequisites: Node.js 22+, Docker, Flutter SDK (stable), Android Studio or an Android device.
+**First time on this computer?** Follow [docs/setup.md](docs/setup.md). It covers installing Git, Node.js, Docker, Flutter and Android Studio on Windows, macOS and Linux, plus fixes for common problems.
+
+Quick start once everything is installed (on Windows, use `Copy-Item` instead of `cp`):
 
 ```bash
 # 1. Database
