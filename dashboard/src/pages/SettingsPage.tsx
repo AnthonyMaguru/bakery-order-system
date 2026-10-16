@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { addMember, listMembers, removeMember, updateSettings } from '../api/bakeries'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { PhotoField } from '../components/PhotoField'
 import { Icon } from '../components/Icon'
 import { useBakery } from '../context/bakery-context'
 import { useToast } from '../context/toast-context'
@@ -9,7 +10,7 @@ import type { BakerySettings, Member, MemberRole } from '../types/api'
 
 type Form = Pick<
   BakerySettings,
-  'name' | 'phone' | 'address' | 'city' | 'about' | 'deliveryAreas' | 'deliveryFee' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber'
+  'name' | 'phone' | 'address' | 'city' | 'about' | 'imageUrl' | 'deliveryAreas' | 'deliveryFee' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber'
 >
 
 const fromSettings = (b: BakerySettings): Form => ({
@@ -18,6 +19,7 @@ const fromSettings = (b: BakerySettings): Form => ({
   address: b.address,
   city: b.city,
   about: b.about,
+  imageUrl: b.imageUrl,
   deliveryAreas: b.deliveryAreas,
   deliveryFee: b.deliveryFee,
   pickupAvailable: b.pickupAvailable,
@@ -65,7 +67,7 @@ export function SettingsPage() {
   }
 
   const describeChanges = () => {
-    const labels: Partial<Record<keyof Form, string>> = { deliveryFee: 'the delivery fee', deliveryAreas: 'the delivery areas', name: 'the name' }
+    const labels: Partial<Record<keyof Form, string>> = { deliveryFee: 'the delivery fee', deliveryAreas: 'the delivery areas', name: 'the name', imageUrl: 'the photo' }
     if (changed.length === 1) return `You changed ${labels[changed[0]!] ?? 'a setting'}.`
     return `You changed ${changed.length} settings.`
   }
@@ -90,6 +92,7 @@ export function SettingsPage() {
             <Text id="b-city" label="City" value={form.city} onChange={(v) => set('city', v)} disabled={disabled} />
           </div>
           <Text id="b-about" label="One line about you" value={form.about ?? ''} onChange={(v) => set('about', v || null)} disabled={disabled} hint="Shown under your name in the app." />
+          <PhotoField label="Bakery photo, shown in the list of bakeries" value={form.imageUrl} onChange={(url) => set('imageUrl', url)} disabled={disabled} />
         </section>
 
         <section className="stack-lg" aria-labelledby="delivery-h">

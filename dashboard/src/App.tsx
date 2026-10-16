@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ToastProvider } from './components/ToastProvider'
+import { AuthGate } from './context/AuthGate'
 import { BakeryProvider } from './context/BakeryProvider'
 import { BuilderOptionsPage } from './pages/BuilderOptionsPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
@@ -14,6 +15,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastProvider>
+        <AuthGate>
         <BakeryProvider>
           <Routes>
             <Route element={<Layout />}>
@@ -29,6 +31,7 @@ export default function App() {
             </Route>
           </Routes>
         </BakeryProvider>
+        </AuthGate>
       </ToastProvider>
     </BrowserRouter>
   )

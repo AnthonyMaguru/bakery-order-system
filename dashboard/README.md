@@ -13,7 +13,9 @@ npm run build      # type-check and production build
 npm run lint
 ```
 
-The backend must be running (see `../backend`) and seeded (`npm run db:seed`). With `VITE_DEV_USER=dev-staff` and `AUTH_DEV_BYPASS=true` on the backend, the dashboard signs in as the owner of the seeded Sweet Crumbs Bakery, without Firebase.
+The backend must be running (see `../backend`) and seeded (`npm run db:seed`).
+
+**Signing in.** Without Firebase settings, the dashboard uses the test login: with `VITE_DEV_USER=dev-staff` and `AUTH_DEV_BYPASS=true` on the backend, you are the owner of the seeded Sweet Crumbs Bakery. Once the `VITE_FIREBASE_*` values are in `.env.local` (see [docs/firebase.md](../docs/firebase.md)), a real sign in page appears: email and password, Google, and password reset. New staff create an account, then the owner adds them under Settings.
 
 ## Pages
 
@@ -22,7 +24,7 @@ The backend must be running (see `../backend`) and seeded (`npm run db:seed`). W
 | `/orders` | All orders, soonest due first, with status tabs, search, and a warning for orders due soon that nobody has touched |
 | `/orders/:id` | What the customer asked for, messages, the quote (with the builder estimate and their budget), payments, the next step, cancelling |
 | `/schedule` | Two weeks of custom cake slots, each day's orders, blocking days, and the daily limits |
-| `/products` | Products shown in the app, hide or show them, add and edit |
+| `/products` | Products shown in the app, hide or show them, add and edit, with photos |
 | `/builder` | Cake builder options and prices, and which stock each uses |
 | `/stock` | Private stock counts; options linked to empty stock hide themselves |
 | `/settings` | Profile, delivery areas and fee, payment methods, staff |
@@ -53,6 +55,4 @@ src/
 
 ## Next steps
 
-- Firebase sign-in for staff, then send the ID token from `api/client.ts`
-- Web push (FCM) for new orders
-- Uploading product photos (Firebase Storage)
+- Web push (FCM) for new orders: needs the VAPID key from docs/firebase.md and a service worker

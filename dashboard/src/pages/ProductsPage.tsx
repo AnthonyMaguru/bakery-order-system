@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { createProduct, listProducts, updateProduct, type ProductInput } from '../api/products'
+import { PhotoField } from '../components/PhotoField'
 import { useBakery } from '../context/bakery-context'
 import { useToast } from '../context/toast-context'
 import { useAsync } from '../hooks/useAsync'
@@ -89,10 +90,19 @@ export function ProductsPage() {
                   {shown.map((p) => (
                     <tr key={p.id} className={p.isActive ? undefined : 'row-muted'}>
                       <td>
+                        <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                          ) : (
+                            <span aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--sand)', flexShrink: 0 }} />
+                          )}
+                          <div>
                         <button type="button" className="link-button" onClick={() => setEditing(p)}>
                           {p.name}
                         </button>
                         <div className="sub">{[p.sizeLabel, p.description].filter(Boolean).join(' · ') || 'No description'}</div>
+                          </div>
+                        </div>
                       </td>
                       <td>{CATEGORY_LABELS[p.category]}</td>
                       <td className="right nowrap">{formatMoney(p.price, bakery.currency)}</td>
@@ -139,6 +149,7 @@ function ProductForm({ product, onDone, onCancel }: { product: Product | null; o
     leadTimeDays: String(product?.leadTimeDays ?? 1),
     customisable: product?.customisable ?? true,
     description: product?.description ?? '',
+    imageUrl: product?.imageUrl ?? null,
   })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -160,6 +171,7 @@ function ProductForm({ product, onDone, onCancel }: { product: Product | null; o
       leadTimeDays: lead,
       customisable: form.category === 'CAKE' && form.customisable,
       description: form.description.trim() || null,
+      imageUrl: form.imageUrl,
     }
     setSaving(true)
     setError(null)
@@ -230,6 +242,7 @@ function ProductForm({ product, onDone, onCancel }: { product: Product | null; o
         </label>
         <textarea id="p-desc" rows={2} placeholder="Icing, filling, anything customers should know" value={form.description} onChange={(e) => set('description', e.target.value)} />
       </div>
+      <PhotoField label="Photo customers see" value={form.imageUrl} onChange={(url) => set('imageUrl', url)} />
       {error && (
         <p className="form-error" role="alert">
           {error}

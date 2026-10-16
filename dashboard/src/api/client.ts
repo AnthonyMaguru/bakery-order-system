@@ -1,3 +1,5 @@
+import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
 export class ApiError extends Error {
@@ -10,8 +12,12 @@ export class ApiError extends Error {
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
-  // TODO(dashboard lead): once Firebase sign-in is added, send the ID token instead:
-  //   return { Authorization: `Bearer ${await auth.currentUser.getIdToken()}` }
+  if (firebaseEnabled) {
+    // getIdToken refreshes the token when it is close to expiring.
+    const token = await firebaseAuth().currentUser?.getIdToken()
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
+  // Test login while there is no Firebase project; needs AUTH_DEV_BYPASS=true on the backend.
   const devUser = import.meta.env.VITE_DEV_USER
   if (devUser) return { 'x-dev-user': devUser, 'x-dev-role': 'STAFF' }
   return {}
