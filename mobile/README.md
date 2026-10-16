@@ -1,6 +1,6 @@
 # Mobile app
 
-Customer app for Android and iOS: browse cakes, place orders, track their status. Flutter (stable channel).
+Customer app for Android and iOS: find a bakery, order a ready made cake or design one in the cake builder, accept the bakery's quote, and follow the order. Flutter (stable channel), following the team's designs (https://claude.ai/artifact/8CSPeqAqPBZBjeSxiFr7bF).
 
 ```bash
 flutter pub get
@@ -10,27 +10,55 @@ flutter analyze
 flutter test
 ```
 
-The backend must be running (see `../backend`). With `AUTH_DEV_BYPASS=true` on the backend, the app signs in as a fake customer (`DEV_USER`, default `dev-customer`) until Firebase Auth is added.
+The backend must be running and seeded (see `../backend`). With `AUTH_DEV_BYPASS=true` on the backend, the app signs in as a test customer (`DEV_USER`, default `dev-customer`) until Firebase Auth is added. Use `--dart-define=DEV_USER=amara` to be someone else.
+
+## What customers can do
+
+- **Find a bakery.** With one bakery (the pilot) the app opens it straight away. With more, customers choose their area and see the bakeries that deliver there, soonest available first.
+- **Order a ready made cake.** Product, quick checkout, done. The price is known, so there is no quote.
+- **Design a cake in 5 steps.** The builder uses the bakery's own options and prices (out of stock options never appear), draws the cake as they choose, and shows an estimate. Or they describe it in their own words instead.
+- **Pick a date that works.** The date picker only offers days the bakery can still take the order.
+- **Accept the quote, pay, follow progress, message the bakery, or cancel** while the bakery hasn't started.
+
+## Weak connections
+
+Built for networks that come and go:
+
+- **Orders are never lost.** If an order can't be sent, it is saved on the phone and sent by itself when the app comes back to the foreground, every 30 seconds while something is waiting, and on the next launch. See `features/outbox/outbox.dart`.
+- **Orders are never sent twice.** Each order gets an id (`clientRequestId`) made on the phone; resending it returns the order the backend already saved.
+- **Menus still show offline.** Bakeries, products and builder options are kept from the last visit (`core/cache.dart`), with a banner saying so.
+- **Clear about what happened.** "Saved on your phone", "Waiting to send", or the bakery's reason if it refused the order.
 
 ## Layout
 
-Code is grouped by feature, so each screen's model, UI and logic sit together:
-
 ```
 lib/
-├── core/               Shared setup: API client, config, theme
+├── core/               API client, offline cache, formatting, theme, shared widgets
+├── models/             Bakery, Product, builder options, Order (parsed from the API)
 ├── features/
-│   ├── catalogue/      Product list
-│   └── orders/         Order form, my orders, order model
+│   ├── bakeries/       Choosing a bakery, the bakery page
+│   ├── product/        Product page, quick checkout
+│   ├── custom_order/   The 5 steps, builder rules, cake preview
+│   ├── orders/         My orders, order details, after sending
+│   ├── outbox/         Orders saved while offline
+│   └── common/         Date picker, pickup or delivery fields
 ├── app.dart            MaterialApp and bottom navigation
 └── main.dart
+test/
+├── rules_test.dart          Builder rules, formatting, request ids
+├── outbox_test.dart         Offline saving and sending, with a fake backend
+├── models_and_draft_test.dart
+├── builder_step_test.dart   The builder screen updates the estimate
+├── api_contract_test.dart   Parses real backend responses in test/fixtures
+└── fixtures/
 ```
 
-Add new features as new folders under `features/` (e.g. `auth/`, `tracking/`).
+Rules that decide things are plain Dart so they're easy to test: `builder_rules.dart` matches the backend's rules for builder choices and estimates.
 
 ## Next steps
 
-- Firebase Auth sign-in, then send the ID token from `core/api_client.dart`
-- Full order form (all fields in `docs/api.md`) and inspiration image upload with on-device compression
-- Push notifications with Firebase Cloud Messaging
-- Offline: cache the catalogue, save order drafts locally and submit when back online
+- Firebase Auth sign in, then send the ID token from `core/api_client.dart`
+- Inspiration photos and a picture of the builder preview: compress on the phone, upload to Firebase Storage, send the URLs (see the TODO in `personal_step.dart`)
+- Push notifications with Firebase Cloud Messaging (quotes, status changes)
+- Bundle the designs' fonts (Bricolage Grotesque and Figtree) as assets
+- Saved drafts of unfinished designs

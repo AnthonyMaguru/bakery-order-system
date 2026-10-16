@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
 
+/// The server answered, but said no. [message] is written for people, so show it as it is.
 class ApiException implements Exception {
   ApiException(this.statusCode, this.message);
 
@@ -14,13 +17,23 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// The request never got an answer: no connection, or it took too long.
+/// Orders that hit this are saved on the phone and sent later (see features/outbox).
+class NetworkException implements Exception {
+  const NetworkException();
+
+  @override
+  String toString() => "You're offline or the connection is too weak right now.";
+}
+
 /// Every call to the backend goes through here. See docs/api.md for endpoints.
 class ApiClient {
-  ApiClient({http.Client? client}) : _client = client ?? http.Client();
+  ApiClient({http.Client? client, this.timeout = const Duration(seconds: 20)}) : _client = client ?? http.Client();
 
   final http.Client _client;
+  final Duration timeout;
 
-  Future<Map<String, String>> _headers() async {
+  Map<String, String> _headers() {
     // TODO(mobile lead): once Firebase Auth is added, send the ID token instead:
     //   'Authorization': 'Bearer ${await FirebaseAuth.instance.currentUser!.getIdToken()}'
     return {
@@ -29,27 +42,33 @@ class ApiClient {
     };
   }
 
-  Future<dynamic> get(String path) async {
-    final res = await _client.get(Uri.parse('${AppConfig.apiUrl}$path'), headers: await _headers());
-    return _decode(res);
-  }
+  Uri _uri(String path) => Uri.parse('${AppConfig.apiUrl}$path');
 
-  Future<dynamic> post(String path, Object body) async {
-    final res = await _client.post(
-      Uri.parse('${AppConfig.apiUrl}$path'),
-      headers: await _headers(),
-      body: jsonEncode(body),
-    );
-    return _decode(res);
-  }
+  Future<dynamic> get(String path) => _send(() => _client.get(_uri(path), headers: _headers()));
 
-  dynamic _decode(http.Response res) {
+  Future<dynamic> post(String path, [Object? body]) =>
+      _send(() => _client.post(_uri(path), headers: _headers(), body: jsonEncode(body ?? {})));
+
+  Future<dynamic> patch(String path, Object body) =>
+      _send(() => _client.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
+
+  Future<dynamic> _send(Future<http.Response> Function() request) async {
+    final http.Response res;
+    try {
+      res = await request().timeout(timeout);
+    } on SocketException {
+      throw const NetworkException();
+    } on TimeoutException {
+      throw const NetworkException();
+    } on http.ClientException {
+      throw const NetworkException();
+    }
     final body = res.body.isEmpty ? null : jsonDecode(res.body);
     if (res.statusCode >= 400) {
-      throw ApiException(res.statusCode, (body is Map ? body['error'] : null) ?? 'Request failed');
+      throw ApiException(res.statusCode, (body is Map ? body['error'] as String? : null) ?? 'Something went wrong');
     }
     return body;
   }
 }
 
-final api = ApiClient();
+ApiClient api = ApiClient();
