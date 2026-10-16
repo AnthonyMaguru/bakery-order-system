@@ -40,7 +40,7 @@ cd backend
 cp .env.example .env
 npm install
 npm run db:migrate      # creates the tables
-npm run db:seed         # optional: sample products and a staff user
+npm run db:seed         # optional: two sample bakeries and a dev staff owner
 npm run dev
 
 # 3. Dashboard (http://localhost:5173), in a second terminal

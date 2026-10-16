@@ -7,8 +7,33 @@ export const usersRouter = Router();
 
 usersRouter.use(requireAuth);
 
-usersRouter.get("/me", (req, res) => {
+// Includes the bakeries the user works for; the dashboard opens the first one.
+usersRouter.get("/me", async (req, res) => {
   const { id, email, name, phone, role } = req.user!;
+  const memberships = await prisma.bakeryMember.findMany({
+    where: { userId: id },
+    select: { role: true, bakery: { select: { id: true, slug: true, name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  res.json({
+    id,
+    email,
+    name,
+    phone,
+    role,
+    bakeries: memberships.map((m) => ({ ...m.bakery, memberRole: m.role })),
+  });
+});
+
+const ProfileUpdate = z.object({
+  name: z.string().trim().min(1).max(100),
+  phone: z.string().trim().max(30),
+}).partial();
+
+// Customers add a phone number so the bakery can reach them.
+usersRouter.patch("/me", async (req, res) => {
+  const data = ProfileUpdate.parse(req.body);
+  const { id, email, name, phone, role } = await prisma.user.update({ where: { id: req.user!.id }, data });
   res.json({ id, email, name, phone, role });
 });
 
