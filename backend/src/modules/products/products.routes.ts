@@ -1,33 +1,46 @@
 import { Router } from "express";
-import { z } from "zod";
-import { notFound } from "../../lib/http-error.js";
+import { isMember, requireMember } from "../../lib/access.js";
+import { forbidden, notFound } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
-import { requireAuth, requireStaff } from "../../middleware/auth.js";
+import { optionalAuth, requireAuth } from "../../middleware/auth.js";
+import { findActiveBakery } from "../bakeries/bakeries.service.js";
+import { ProductInput, ProductsQuery, ProductUpdate } from "./products.schemas.js";
 
-const ProductInput = z.object({
-  name: z.string().min(1).max(120),
-  description: z.string().max(1000).optional(),
-  category: z.string().min(1).max(50),
-  basePriceUgx: z.number().int().nonnegative().optional(),
-  imageUrl: z.string().url().optional(),
-  isActive: z.boolean().optional(),
-});
-
+// Mounted at /api/bakeries.
 export const productsRouter = Router();
 
-// Public so the app can show the catalogue before sign-in.
-productsRouter.get("/", async (_req, res) => {
-  res.json(await prisma.product.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }));
+// Public, so the app can show a bakery's products before sign-in. Staff add ?all=true to see hidden ones.
+productsRouter.get("/:bakeryId/products", optionalAuth, async (req, res) => {
+  const { category, all } = ProductsQuery.parse(req.query);
+  const includeHidden = all === "true";
+  const bakery = await findActiveBakery(req.params.bakeryId);
+  if (includeHidden && !(await isMember(req.user, bakery.id))) throw forbidden();
+  res.json(
+    await prisma.product.findMany({
+      where: { bakeryId: bakery.id, category, isActive: includeHidden ? undefined : true },
+      orderBy: [{ category: "asc" }, { name: "asc" }],
+    }),
+  );
 });
 
-productsRouter.post("/", requireAuth, requireStaff, async (req, res) => {
+productsRouter.get("/:bakeryId/products/:productId", async (req, res) => {
+  const bakery = await findActiveBakery(req.params.bakeryId);
+  const product = await prisma.product.findFirst({
+    where: { id: req.params.productId, bakeryId: bakery.id, isActive: true },
+  });
+  if (!product) throw notFound("Product");
+  res.json(product);
+});
+
+productsRouter.post("/:bakeryId/products", requireAuth, requireMember(), async (req, res) => {
   const data = ProductInput.parse(req.body);
-  res.status(201).json(await prisma.product.create({ data }));
+  res.status(201).json(await prisma.product.create({ data: { ...data, bakeryId: req.params.bakeryId } }));
 });
 
-productsRouter.patch("/:id", requireAuth, requireStaff, async (req, res) => {
-  const data = ProductInput.partial().parse(req.body);
-  const existing = await prisma.product.findUnique({ where: { id: req.params.id } });
+// Products are hidden rather than deleted, so past orders keep pointing at them.
+productsRouter.patch("/:bakeryId/products/:productId", requireAuth, requireMember(), async (req, res) => {
+  const data = ProductUpdate.parse(req.body);
+  const existing = await prisma.product.findFirst({ where: { id: req.params.productId, bakeryId: req.params.bakeryId } });
   if (!existing) throw notFound("Product");
-  res.json(await prisma.product.update({ where: { id: req.params.id }, data }));
+  res.json(await prisma.product.update({ where: { id: existing.id }, data }));
 });

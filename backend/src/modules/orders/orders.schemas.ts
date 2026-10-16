@@ -1,31 +1,39 @@
 import { z } from "zod";
+import { isDayKey } from "../../lib/dates.js";
 
 // Keep these lists in sync with the enums in prisma/schema.prisma.
-export const ORDER_STATUSES = ["SUBMITTED", "CONFIRMED", "PREPARING", "READY", "COMPLETED", "CANCELLED"] as const;
-export const PAYMENT_STATUSES = ["UNPAID", "DEPOSIT_PAID", "PAID"] as const;
+export const ORDER_STATUSES = ["SUBMITTED", "QUOTED", "CONFIRMED", "PREPARING", "READY", "COMPLETED", "CANCELLED"] as const;
 export const PAYMENT_METHODS = ["CASH", "MOBILE_MONEY"] as const;
 
 const OrderItemInput = z.object({
   productId: z.string().min(1),
-  quantity: z.number().int().positive().default(1),
+  quantity: z.number().int().positive().max(500).default(1),
 });
 
-// Most custom fields are optional: the "unsure customer" persona can leave design details to the bakery.
+// Most design fields are optional: a customer who is unsure can leave them to the bakery.
 export const CreateOrderInput = z.object({
+  bakeryId: z.string().min(1),
+  // A random id made by the app for this submission. Sending the same one again
+  // returns the first order instead of creating a duplicate.
+  clientRequestId: z.string().min(8).max(100).optional(),
   type: z.enum(["STANDARD", "CUSTOM", "BULK"]),
-  occasion: z.string().max(100).optional(),
-  flavour: z.string().max(100).optional(),
-  icing: z.string().max(100).optional(),
-  size: z.string().max(50).optional(),
-  colours: z.string().max(200).optional(),
-  theme: z.string().max(200).optional(),
-  inscription: z.string().max(200).optional(),
-  notes: z.string().max(2000).optional(),
-  budgetUgx: z.number().int().nonnegative().optional(),
+  occasion: z.string().trim().max(100).optional(),
+  flavour: z.string().trim().max(100).optional(),
+  icing: z.string().trim().max(100).optional(),
+  size: z.string().trim().max(50).optional(),
+  colours: z.string().trim().max(200).optional(),
+  theme: z.string().trim().max(200).optional(),
+  inscription: z.string().trim().max(200).optional(),
+  notes: z.string().trim().max(2000).optional(),
+  budget: z.number().int().nonnegative().optional(),
   dueDate: z.coerce.date(),
   fulfilment: z.enum(["PICKUP", "DELIVERY"]),
-  deliveryAddress: z.string().max(300).optional(),
-  items: z.array(OrderItemInput).default([]),
+  deliveryArea: z.string().trim().max(80).optional(),
+  deliveryAddress: z.string().trim().max(300).optional(),
+  items: z.array(OrderItemInput).max(50).default([]),
+  // Builder choices, from GET /bakeries/:bakeryId/builder.
+  optionIds: z.array(z.string().min(1)).max(50).default([]),
+  designImageUrl: z.string().url().optional(),
   inspirationImageUrls: z.array(z.string().url()).max(5).default([]),
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInput>;
@@ -35,16 +43,25 @@ export const UpdateStatusInput = z.object({
 });
 
 export const CreateQuotationInput = z.object({
-  amountUgx: z.number().int().positive(),
-  note: z.string().max(1000).optional(),
+  amount: z.number().int().positive(),
+  note: z.string().trim().max(1000).optional(),
 });
 
-export const UpdatePaymentInput = z.object({
-  paymentStatus: z.enum(PAYMENT_STATUSES),
-  paymentMethod: z.enum(PAYMENT_METHODS).optional(),
-  amountPaidUgx: z.number().int().nonnegative().optional(),
+// The quote the customer saw, so a newer quote isn't accepted by mistake.
+export const AcceptQuoteInput = z.object({
+  quotationId: z.string().min(1),
 });
-export type UpdatePaymentInput = z.infer<typeof UpdatePaymentInput>;
+
+export const CancelInput = z.object({
+  reason: z.string().trim().max(300).optional(),
+});
+
+export const PaymentInput = z.object({
+  amount: z.number().int().positive(),
+  method: z.enum(PAYMENT_METHODS),
+  note: z.string().trim().max(300).optional(),
+});
+export type PaymentInput = z.infer<typeof PaymentInput>;
 
 export const CreateCommentInput = z.object({
   body: z.string().trim().min(1).max(2000),
@@ -53,3 +70,15 @@ export const CreateCommentInput = z.object({
 export const ListOrdersQuery = z.object({
   status: z.enum(ORDER_STATUSES).optional(),
 });
+
+const DayKey = z.string().refine(isDayKey, "Use a real date written as YYYY-MM-DD");
+
+export const BakeryOrdersQuery = z.object({
+  status: z.enum(ORDER_STATUSES).optional(),
+  // Due date range, inclusive, in the bakery's timezone.
+  from: DayKey.optional(),
+  to: DayKey.optional(),
+  // Customer name or phone, or an order number such as BK1042.
+  q: z.string().trim().min(1).max(80).optional(),
+});
+export type BakeryOrdersQuery = z.infer<typeof BakeryOrdersQuery>;

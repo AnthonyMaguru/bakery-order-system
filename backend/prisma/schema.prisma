@@ -10,24 +10,55 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// First draft of the data model (concept paper 3.7). Change it freely in
-// week 2, then run `npm run db:migrate` to create a migration.
-// Enum values must stay in sync with src/modules/orders/orders.schemas.ts.
+// Multi-bakery data model. Every row a bakery owns carries `bakeryId`, so one
+// deployment serves any number of bakeries; the pilot just has one.
+//
+// Money is stored as Int in whole units of the bakery's currency
+// (`Bakery.currency`, e.g. UGX). Orders copy the currency when they are placed.
+//
+// Enum values must stay in sync with the zod schemas in src/modules.
 // ---------------------------------------------------------------------------
 
+// Platform role. Bakery staff are users with a BakeryMember row, not a role here.
 enum Role {
   CUSTOMER
+  ADMIN
+}
+
+enum MemberRole {
+  OWNER
   STAFF
 }
 
+enum ProductCategory {
+  CAKE
+  CUPCAKE
+  BREAD
+  PASTRY
+  COOKIE
+  EXTRA
+}
+
+// Tells the app how to draw an option in the cake builder preview.
+enum OptionKind {
+  SHAPE
+  TIERS
+  SIZE
+  FLAVOUR
+  ICING_COLOUR
+  DECORATION
+  OTHER
+}
+
 enum OrderType {
-  STANDARD
-  CUSTOM
-  BULK
+  STANDARD // a catalogue product as it is; the price is known, so no quote
+  CUSTOM // designed in the cake builder or described by the customer; needs a quote
+  BULK // large event orders; needs a quote
 }
 
 enum OrderStatus {
   SUBMITTED
+  QUOTED
   CONFIRMED
   PREPARING
   READY
@@ -40,7 +71,7 @@ enum Fulfilment {
   DELIVERY
 }
 
-// The app records payment status only; it never processes payments.
+// The app records payments only; it never takes money.
 enum PaymentStatus {
   UNPAID
   DEPOSIT_PAID
@@ -50,6 +81,11 @@ enum PaymentStatus {
 enum PaymentMethod {
   CASH
   MOBILE_MONEY
+}
+
+enum CancelledBy {
+  CUSTOMER
+  BAKERY
 }
 
 model User {
@@ -64,31 +100,175 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orders     Order[]
-  quotations Quotation[]
-  comments   OrderComment[]
+  memberships BakeryMember[]
+  orders      Order[]
+  quotations  Quotation[]
+  comments    OrderComment[]
+  payments    Payment[]
+}
+
+model Bakery {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  name               String
+  about              String?
+  phone              String?
+  address            String?
+  city               String
+  // ISO 3166 country code, used to keep customers to bakeries in their country.
+  country            String   @default("UG")
+  // ISO 4217 code. Fixed once the bakery has orders.
+  currency           String   @default("UGX")
+  // Decides which calendar day an order's due time falls on.
+  timezone           String   @default("Africa/Kampala")
+  imageUrl           String?
+  // Neighbourhoods the bakery delivers to, e.g. "Ntinda".
+  deliveryAreas      String[]
+  deliveryFee        Int      @default(0)
+  pickupAvailable    Boolean  @default(true)
+  acceptsCash        Boolean  @default(true)
+  acceptsMobileMoney Boolean  @default(true)
+  mobileMoneyNumber  String?
+  // Daily capacity for custom and bulk orders.
+  customCakesPerDay  Int      @default(4)
+  customNoticeDays   Int      @default(3)
+  // ISO weekdays the bakery is closed: 1 is Monday, 7 is Sunday.
+  closedWeekdays     Int[]    @default([])
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  members      BakeryMember[]
+  products     Product[]
+  optionGroups OptionGroup[]
+  stockItems   StockItem[]
+  blockedDates BlockedDate[]
+  orders       Order[]
+}
+
+model BakeryMember {
+  id        String     @id @default(cuid())
+  bakeryId  String
+  userId    String
+  role      MemberRole @default(STAFF)
+  createdAt DateTime   @default(now())
+
+  bakery Bakery @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bakeryId, userId])
+  @@index([userId])
+}
+
+// A day the bakery takes no orders, on top of its closed weekdays.
+model BlockedDate {
+  id       String   @id @default(cuid())
+  bakeryId String
+  date     DateTime @db.Date
+  reason   String?
+
+  bakery Bakery @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+
+  @@unique([bakeryId, date])
 }
 
 model Product {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
+  bakeryId     String
   name         String
   description  String?
-  // e.g. "cake" or "add-on"
-  category     String
-  basePriceUgx Int?
+  category     ProductCategory
+  price        Int
   imageUrl     String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sizeLabel    String?
+  serves       Int?
+  // Earliest due date is this many days after ordering.
+  leadTimeDays Int             @default(1)
+  // Customers may open it in the cake builder and change it.
+  customisable Boolean         @default(false)
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
+  bakery     Bakery      @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+
+  @@index([bakeryId, category])
+}
+
+// A set of choices in the builder, e.g. "Decorations".
+model OptionGroup {
+  id        String          @id @default(cuid())
+  bakeryId  String
+  category  ProductCategory @default(CAKE)
+  kind      OptionKind
+  name      String
+  // Several options may be picked (decorations) or only one (shape).
+  multiple  Boolean         @default(false)
+  required  Boolean         @default(false)
+  position  Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  bakery  Bakery   @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+  options Option[]
+
+  @@index([bakeryId, category])
+}
+
+model Option {
+  id          String   @id @default(cuid())
+  groupId     String
+  name        String
+  // Added to the estimate when picked. Sizes carry the base price.
+  price       Int      @default(0)
+  // Drawing hint for the app preview: "ROUND", "2", "#F5B8C9", "pearls".
+  value       String?
+  serves      Int?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  position    Int      @default(0)
+  // When this stock item runs out, the option is hidden from customers.
+  stockItemId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group      OptionGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  stockItem  StockItem?       @relation(fields: [stockItemId], references: [id], onDelete: SetNull)
+  selections OrderSelection[]
+
+  @@index([groupId])
+}
+
+// Private to the bakery. Customers only ever see its effect on options.
+model StockItem {
+  id        String   @id @default(cuid())
+  bakeryId  String
+  name      String
+  unit      String
+  quantity  Float    @default(0)
+  // Shown as "running low" at or below this amount.
+  lowAt     Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bakery  Bakery   @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+  options Option[]
+
+  @@unique([bakeryId, name])
 }
 
 model Order {
   id              String         @id @default(cuid())
+  // Short number for people, shown as BK1042.
+  number          Int            @unique @default(autoincrement())
+  // Sent by the app so a retried submission after a dropped connection is not saved twice.
+  clientRequestId String?
+  bakeryId        String
   customerId      String
   type            OrderType
   status          OrderStatus    @default(SUBMITTED)
+  currency        String
   occasion        String?
   flavour         String?
   icing           String?
@@ -97,23 +277,36 @@ model Order {
   theme           String?
   inscription     String?
   notes           String?
-  budgetUgx       Int?
+  budget          Int?
+  // Sum of the builder option prices when the order was placed.
+  estimate        Int?
+  // Known price: the catalogue total for ready-made orders, the accepted quote for the rest.
+  total           Int?
+  // Picture of the builder preview, uploaded by the app.
+  designImageUrl  String?
   dueDate         DateTime
   fulfilment      Fulfilment
+  deliveryArea    String?
   deliveryAddress String?
+  deliveryFee     Int            @default(0)
   paymentStatus   PaymentStatus  @default(UNPAID)
-  paymentMethod   PaymentMethod?
-  amountPaidUgx   Int            @default(0)
+  amountPaid      Int            @default(0)
+  cancelledBy     CancelledBy?
+  cancelReason    String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  bakery     Bakery             @relation(fields: [bakeryId], references: [id])
   customer   User               @relation(fields: [customerId], references: [id])
   items      OrderItem[]
+  selections OrderSelection[]
   images     InspirationImage[]
   quotations Quotation[]
   comments   OrderComment[]
+  payments   Payment[]
 
-  @@index([status, dueDate])
+  @@unique([customerId, clientRequestId])
+  @@index([bakeryId, status, dueDate])
   @@index([customerId])
 }
 
@@ -122,9 +315,26 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int    @default(1)
+  // Price when ordered, so later price changes don't rewrite old orders.
+  unitPrice Int
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+}
+
+// A builder choice on an order. Names and price are copied so the order still
+// reads correctly after the bakery edits or deletes the option.
+model OrderSelection {
+  id         String  @id @default(cuid())
+  orderId    String
+  optionId   String?
+  groupName  String
+  optionName String
+  value      String?
+  price      Int
+
+  order  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  option Option? @relation(fields: [optionId], references: [id], onDelete: SetNull)
 }
 
 // Images are compressed on the phone and uploaded to Firebase Storage; only the URL is stored here.
@@ -138,12 +348,13 @@ model InspirationImage {
 }
 
 model Quotation {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   orderId     String
-  amountUgx   Int
+  amount      Int
   note        String?
   createdById String
-  createdAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
 
   order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdBy User  @relation(fields: [createdById], references: [id])
@@ -151,12 +362,27 @@ model Quotation {
 
 // MVP substitute for in-app messaging: a simple notes thread per order.
 model OrderComment {
-  id        String   @id @default(cuid())
-  orderId   String
-  authorId  String
-  body      String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  orderId    String
+  authorId   String
+  body       String
+  // Written by bakery staff rather than the customer.
+  fromBakery Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   author User  @relation(fields: [authorId], references: [id])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String
+  amount       Int
+  method       PaymentMethod
+  note         String?
+  recordedById String
+  createdAt    DateTime      @default(now())
+
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recordedBy User  @relation(fields: [recordedById], references: [id])
 }

@@ -11,8 +11,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bakery
+          POSTGRES_PASSWORD: bakery
+          POSTGRES_DB: bakery
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bakery"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       DATABASE_URL: postgresql://bakery:bakery@localhost:5432/bakery
+      AUTH_DEV_BYPASS: "true"
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,7 +38,12 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      # Proves the migrations build the schema from nothing, then gives the API tests data.
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
       - run: npm test
+        env:
+          RUN_DB_TESTS: "1"
 
   dashboard:
     runs-on: ubuntu-latest

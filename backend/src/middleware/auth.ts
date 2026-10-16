@@ -1,24 +1,35 @@
 import type { NextFunction, Request, Response } from "express";
 import { env, isProduction } from "../config/env.js";
 import { firebaseAuth } from "../lib/firebase.js";
-import { forbidden, HttpError } from "../lib/http-error.js";
-import { prisma, type Role } from "../lib/prisma.js";
+import { HttpError } from "../lib/http-error.js";
+import { prisma, type User } from "../lib/prisma.js";
 
 interface Identity {
   uid: string;
   email?: string;
   name?: string;
-  devRole?: Role;
+  dev?: { role: "CUSTOMER" | "STAFF" | "ADMIN"; bakerySlug: string };
+}
+
+// Seeded by prisma/seed.ts; dev staff join it unless `x-dev-bakery` names another bakery.
+const DEFAULT_DEV_BAKERY = "sweet-crumbs";
+
+function hasCredentials<P>(req: Request<P>) {
+  return Boolean(req.header("authorization") || (env.AUTH_DEV_BYPASS && !isProduction && req.header("x-dev-user")));
 }
 
 async function identify<P>(req: Request<P>): Promise<Identity> {
   if (env.AUTH_DEV_BYPASS && !isProduction) {
     const devUser = req.header("x-dev-user");
     if (devUser) {
+      const role = req.header("x-dev-role");
       return {
         uid: `dev:${devUser}`,
         name: devUser,
-        devRole: req.header("x-dev-role") === "STAFF" ? "STAFF" : "CUSTOMER",
+        dev: {
+          role: role === "STAFF" || role === "ADMIN" ? role : "CUSTOMER",
+          bakerySlug: req.header("x-dev-bakery") ?? DEFAULT_DEV_BAKERY,
+        },
       };
     }
   }
@@ -35,20 +46,36 @@ async function identify<P>(req: Request<P>): Promise<Identity> {
   }
 }
 
-// Verifies the caller and attaches their User record as req.user, creating it on first sign-in.
-// Both middlewares are generic so Express keeps the route's typed params (e.g. :id)
-// in the handlers that follow them.
-export async function requireAuth<P>(req: Request<P>, _res: Response, next: NextFunction) {
-  const { uid, email, name, devRole } = await identify(req);
-  req.user = await prisma.user.upsert({
+async function loadUser({ uid, email, name, dev }: Identity): Promise<User> {
+  const role = dev?.role === "ADMIN" ? "ADMIN" : "CUSTOMER";
+  const user = await prisma.user.upsert({
     where: { firebaseUid: uid },
-    update: devRole ? { role: devRole } : {},
-    create: { firebaseUid: uid, email, name, role: devRole ?? "CUSTOMER" },
+    update: dev ? { role } : {},
+    create: { firebaseUid: uid, email, name, role },
   });
+  // Dev staff are made owners of the bakery they name, so every dashboard screen works locally.
+  if (dev?.role === "STAFF") {
+    const bakery = await prisma.bakery.findUnique({ where: { slug: dev.bakerySlug }, select: { id: true } });
+    if (bakery) {
+      await prisma.bakeryMember.upsert({
+        where: { bakeryId_userId: { bakeryId: bakery.id, userId: user.id } },
+        update: {},
+        create: { bakeryId: bakery.id, userId: user.id, role: "OWNER" },
+      });
+    }
+  }
+  return user;
+}
+
+// Verifies the caller and attaches their User record as req.user, creating it on first sign-in.
+// Generic so Express keeps the route's typed params (e.g. :id) in the handlers that follow.
+export async function requireAuth<P>(req: Request<P>, _res: Response, next: NextFunction) {
+  req.user = await loadUser(await identify(req));
   next();
 }
 
-export function requireStaff<P>(req: Request<P>, _res: Response, next: NextFunction) {
-  if (req.user?.role !== "STAFF") throw forbidden();
+// For public routes that show more to signed-in staff. Bad credentials still fail.
+export async function optionalAuth<P>(req: Request<P>, _res: Response, next: NextFunction) {
+  if (hasCredentials(req)) req.user = await loadUser(await identify(req));
   next();
 }
