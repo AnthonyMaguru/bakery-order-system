@@ -10,7 +10,7 @@ flutter analyze
 flutter test
 ```
 
-The backend must be running and seeded (see `../backend`). With `AUTH_DEV_BYPASS=true` on the backend, the app signs in as a test customer (`DEV_USER`, default `dev-customer`) until Firebase Auth is added. Use `--dart-define=DEV_USER=amara` to be someone else.
+The backend must be running and seeded (see `../backend`). With `AUTH_DEV_BYPASS=true` on the backend and no Firebase settings, the app uses a test customer (`DEV_USER`, default `dev-customer`). For Firebase, pass the values from `firebase.example.json` with `--dart-define-from-file=firebase.json`.
 
 ## What customers can do
 
@@ -58,7 +58,7 @@ Rules that decide things are plain Dart so they're easy to test: `builder_rules.
 ## Next steps
 
 - Firebase Auth sign in, then send the ID token from `core/api_client.dart`
-- Inspiration photos and a picture of the builder preview: compress on the phone, upload to Firebase Storage, send the URLs (see the TODO in `personal_step.dart`)
+- Inspiration photos and a picture of the builder preview: compressed on the phone and uploaded through the API
 - Push notifications with Firebase Cloud Messaging (quotes, status changes)
 - Bundle the designs' fonts (Bricolage Grotesque and Figtree) as assets
 - Saved drafts of unfinished designs

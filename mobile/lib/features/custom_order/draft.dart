@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../models/bakery.dart';
 import '../../models/builder.dart';
 import '../../models/product.dart';
@@ -24,6 +26,12 @@ class CustomOrderDraft {
   String flavour = '';
   String size = '';
   String colours = '';
+
+  /// Inspiration photos, uploaded as soon as they're picked. The bytes are kept for previews.
+  List<({Uint8List bytes, String url})> photos = [];
+
+  /// A picture of the builder preview, uploaded when the order is sent.
+  String? designImageUrl;
 
   String inscription = '';
   String theme = '';
@@ -69,6 +77,8 @@ class CustomOrderDraft {
         'deliveryArea': deliveryArea,
         'deliveryAddress': text(deliveryAddress),
       },
+      if (photos.isNotEmpty) 'inspirationImageUrls': [for (final p in photos) p.url],
+      'designImageUrl': useBuilder ? designImageUrl : null,
       'optionIds': useBuilder ? [for (final o in rules.picked(groups, selection)) o.id] : <String>[],
       'items': [
         if (basedOn != null) {'productId': basedOn!.id, 'quantity': 1},

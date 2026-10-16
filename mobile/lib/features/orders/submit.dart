@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../auth/auth.dart';
 import '../outbox/outbox.dart';
 import 'order_sent_screen.dart';
 
@@ -13,6 +14,8 @@ Future<void> submitOrder(
   required String bakeryName,
   required bool custom,
 }) async {
+  if (!await ensureSignedIn(context)) return;
+  if (!context.mounted) return;
   final result = await Outbox.instance.submit(body, title: title, bakeryName: bakeryName);
   if (!context.mounted) return;
   final screen = switch (result) {

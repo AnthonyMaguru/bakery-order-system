@@ -1,5 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../core/uploads.dart';
+import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import 'draft.dart';
 import 'when_step.dart';
@@ -17,6 +22,9 @@ class PersonalStep extends StatefulWidget {
 
 class _PersonalStepState extends State<PersonalStep> {
   CustomOrderDraft get d => widget.draft;
+  final _picker = ImagePicker();
+  bool _uploadingPhoto = false;
+  String? _photoError;
   late final _inscription = TextEditingController(text: d.inscription);
   late final _theme = TextEditingController(text: d.theme);
   late final _notes = TextEditingController(text: d.notes);
@@ -40,6 +48,89 @@ class _PersonalStepState extends State<PersonalStep> {
       ..flavour = _flavour.text
       ..size = _size.text
       ..colours = _colours.text;
+  }
+
+  Future<void> _pickPhoto() async {
+    if (d.photos.length >= 5) {
+      setState(() => _photoError = 'You can add up to 5 inspiration photos');
+      return;
+    }
+    setState(() {
+      _uploadingPhoto = true;
+      _photoError = null;
+    });
+    try {
+      final file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 82,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final url = await uploadPhoto(Uint8List.fromList(bytes), contentType: _contentType(file.name));
+      if (mounted) setState(() => d.photos = [...d.photos, (bytes: bytes, url: url)]);
+    } catch (e) {
+      if (mounted) setState(() => _photoError = e.toString());
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  String _contentType(String name) {
+    final extension = name.split('.').last.toLowerCase();
+    return switch (extension) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+  }
+
+  Widget _photos() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const FieldLabel('Inspiration photos', optional: true),
+        const Text('Show the baker what you have in mind. You can add up to 5.', style: TextStyle(color: AppColors.muted)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (var i = 0; i < d.photos.length; i++)
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(d.photos[i].bytes, width: 76, height: 76, fit: BoxFit.cover),
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: IconButton(
+                      style: IconButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size(32, 32), padding: EdgeInsets.zero),
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Remove photo',
+                      onPressed: () => setState(() => d.photos = [...d.photos]..removeAt(i)),
+                    ),
+                  ),
+                ],
+              ),
+            if (d.photos.length < 5)
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(76, 76), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: _uploadingPhoto ? null : _pickPhoto,
+                icon: _uploadingPhoto ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text('Add'),
+              ),
+          ],
+        ),
+        if (_photoError != null) ...[
+          const SizedBox(height: 8),
+          Text(_photoError!, style: const TextStyle(color: AppColors.danger)),
+        ],
+      ],
+    );
   }
 
   Widget _field(String label, TextEditingController controller, {String? hint, int? maxLength, int maxLines = 1}) {
@@ -83,11 +174,10 @@ class _PersonalStepState extends State<PersonalStep> {
                   _field('Writing on the cake', _inscription, hint: 'For example Happy 5th Birthday Amara', maxLength: 40),
                   _field('Theme or character', _theme, hint: 'For example football, flowers or a cartoon'),
                   _field('Notes for the baker', _notes, hint: 'Allergies, colours to avoid, anything else', maxLines: 3),
+                  _photos(),
                 ],
               ),
             ),
-            // TODO(mobile lead): inspiration photos, compressed on the phone and uploaded to
-            // Firebase Storage, sent as inspirationImageUrls (and designImageUrl for the preview).
           ],
         ),
         bottomNavigationBar: BottomBar(

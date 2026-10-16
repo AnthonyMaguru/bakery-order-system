@@ -10,6 +10,7 @@ node_modules/
 secrets/
 # Firebase app config files. Not secret, but each copy is tied to one Firebase project.
 google-services.json
+/mobile/firebase.json
 GoogleService-Info.plist
 *service-account*.json
 firebase-adminsdk-*.json

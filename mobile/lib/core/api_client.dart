@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'dart:typed_data';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
+import 'firebase_setup.dart';
 
 /// The server answered, but said no. [message] is written for people, so show it as it is.
 class ApiException implements Exception {
@@ -33,29 +37,36 @@ class ApiClient {
   final http.Client _client;
   final Duration timeout;
 
-  Map<String, String> _headers() {
-    // TODO(mobile lead): once Firebase Auth is added, send the ID token instead:
-    //   'Authorization': 'Bearer ${await FirebaseAuth.instance.currentUser!.getIdToken()}'
-    return {
-      'Content-Type': 'application/json',
-      if (AppConfig.devUser.isNotEmpty) 'x-dev-user': AppConfig.devUser,
-    };
+  Future<Map<String, String>> _headers([String contentType = 'application/json']) async {
+    final headers = {'Content-Type': contentType};
+    if (firebaseReady) {
+      // getIdToken refreshes the token when it is close to expiring.
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+    } else if (AppConfig.devUser.isNotEmpty) {
+      // Test login while there is no Firebase project; needs AUTH_DEV_BYPASS=true on the backend.
+      headers['x-dev-user'] = AppConfig.devUser;
+    }
+    return headers;
   }
 
   Uri _uri(String path) => Uri.parse('${AppConfig.apiUrl}$path');
 
-  Future<dynamic> get(String path) => _send(() => _client.get(_uri(path), headers: _headers()));
+  Future<dynamic> get(String path) => _send((h) => _client.get(_uri(path), headers: h));
 
   Future<dynamic> post(String path, [Object? body]) =>
-      _send(() => _client.post(_uri(path), headers: _headers(), body: jsonEncode(body ?? {})));
+      _send((h) => _client.post(_uri(path), headers: h, body: jsonEncode(body ?? {})));
 
-  Future<dynamic> patch(String path, Object body) =>
-      _send(() => _client.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
+  Future<dynamic> patch(String path, Object body) => _send((h) => _client.patch(_uri(path), headers: h, body: jsonEncode(body)));
 
-  Future<dynamic> _send(Future<http.Response> Function() request) async {
+  /// Sends raw bytes, e.g. a photo for POST /uploads.
+  Future<dynamic> postBytes(String path, Uint8List bytes, String contentType) =>
+      _send((h) => _client.post(_uri(path), headers: h, body: bytes), contentType: contentType);
+
+  Future<dynamic> _send(Future<http.Response> Function(Map<String, String> headers) request, {String contentType = 'application/json'}) async {
     final http.Response res;
     try {
-      res = await request().timeout(timeout);
+      res = await request(await _headers(contentType)).timeout(timeout);
     } on SocketException {
       throw const NetworkException();
     } on TimeoutException {
