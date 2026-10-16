@@ -40,11 +40,12 @@ class _ReviewStepState extends State<ReviewStep> {
       if (d.useBuilder && d.designImageUrl == null) {
         await _uploadPreview();
       }
+      if (!mounted) return;
       await submitOrder(context, body: d.toJson(), title: d.title, bakeryName: d.bakery.name, custom: true);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } on NetworkException catch (e) {
-      setState(() => _error = e.message);
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }

@@ -31,7 +31,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 
   Future<List<Order>> _load() async {
-    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return [];
     if (!await ensureSignedIn(context)) return [];
     final data = await api.get('/orders') as List;
     return data.map((o) => Order.fromJson(o as Map<String, dynamic>)).toList();
