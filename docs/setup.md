@@ -169,7 +169,7 @@ Then:
 
 ```bash
 npm run db:migrate      # creates the tables
-npm run db:seed         # sample cakes and a staff user
+npm run db:seed         # two sample bakeries and a dev staff owner
 npm run dev
 ```
 
