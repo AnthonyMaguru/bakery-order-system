@@ -15,6 +15,7 @@ const LINKS: { to: string; label: string; icon: IconName }[] = [
 
 export function Layout() {
   const { me, bakery, isOwner, newOrders, stockAlerts, switchBakery } = useBakery()
+  const isAdmin = me.role === 'ADMIN'
 
   const badge = (to: string) => {
     if (to === '/orders' && newOrders > 0) return <span className="nav-badge">{newOrders} new</span>
@@ -50,6 +51,12 @@ export function Layout() {
               {badge(link.to)}
             </NavLink>
           ))}
+          {isAdmin && (
+            <NavLink to="/admin/applications">
+              <Icon name="settings" />
+              <span>Bakery applications</span>
+            </NavLink>
+          )}
         </nav>
         <div className="sidebar-user">
           <strong>{me.name ?? me.email ?? 'Signed in'}</strong>

@@ -56,6 +56,16 @@ Custom and BULK:         SUBMITTED → QUOTED → CONFIRMED → PREPARING → RE
 
 ## Endpoints
 
+### Bakery applications
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| POST | `/bakery-applications` | public | Submit a bakery for review |
+| GET | `/bakery-applications` | platform admin | Review submitted applications |
+| PATCH | `/bakery-applications/:applicationId` | platform admin | Set `PENDING`, `CONTACTED`, `APPROVED` or `DECLINED` |
+
+Applications do not create a public bakery immediately. After review, the platform team creates the bakery, adds the owner as an `OWNER` member, and contacts them with the sign-in and setup details.
+
 ### Bakeries (public)
 
 | Method | Path | Purpose |
