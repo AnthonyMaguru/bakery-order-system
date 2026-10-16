@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cmvapjio70000aziju5pfrb57",
+    "slug": "sweet-crumbs",
+    "name": "Sweet Crumbs Bakery",
+    "about": "Custom cakes for every celebration",
+    "phone": "0772 000 000",
+    "address": "Kisaasi Road, Kampala",
+    "city": "Kampala",
+    "country": "UG",
+    "currency": "UGX",
+    "imageUrl": null,
+    "deliveryAreas": [
+      "Kisaasi",
+      "Ntinda",
+      "Kyanja",
+      "Bukoto",
+      "Naalya"
+    ],
+    "deliveryFee": 5000,
+    "pickupAvailable": true,
+    "acceptsCash": true,
+    "acceptsMobileMoney": true,
+    "mobileMoneyNumber": "0772 000 000",
+    "cakesFrom": 60000,
+    "nextCustomDate": "2026-10-20"
+  },
+  {
+    "id": "cmvapjjbo001cazijpe3tsmz1",
+    "slug": "mamas-oven",
+    "name": "Mama’s Oven",
+    "about": "Home style cakes and bread",
+    "phone": null,
+    "address": "Bukoto, Kampala",
+    "city": "Kampala",
+    "country": "UG",
+    "currency": "UGX",
+    "imageUrl": null,
+    "deliveryAreas": [
+      "Bukoto",
+      "Ntinda",
+      "Kamwokya"
+    ],
+    "deliveryFee": 7000,
+    "pickupAvailable": true,
+    "acceptsCash": true,
+    "acceptsMobileMoney": true,
+    "mobileMoneyNumber": null,
+    "cakesFrom": 70000,
+    "nextCustomDate": "2026-10-23"
+  }
+]

@@ -1,0 +1,152 @@
+{
+  "id": "cmvapk1ft0001d5ijeea2m2zv",
+  "number": 1,
+  "clientRequestId": "6f1c2e0a-5b7d-4e5f-9a51-3c2b1d0e9f88",
+  "bakeryId": "cmvapjio70000aziju5pfrb57",
+  "customerId": "cmvapk1bs0000d5ijd6z3bnq8",
+  "type": "CUSTOM",
+  "status": "QUOTED",
+  "currency": "UGX",
+  "occasion": "Birthday",
+  "flavour": null,
+  "icing": null,
+  "size": null,
+  "colours": null,
+  "theme": null,
+  "inscription": "Happy 5th Birthday Amara",
+  "notes": null,
+  "budget": 120000,
+  "estimate": 165000,
+  "total": null,
+  "designImageUrl": null,
+  "dueDate": "2026-10-20T11:00:00.000Z",
+  "fulfilment": "DELIVERY",
+  "deliveryArea": "Ntinda",
+  "deliveryAddress": "Plot 12, Ntinda",
+  "deliveryFee": 5000,
+  "paymentStatus": "UNPAID",
+  "amountPaid": 0,
+  "cancelledBy": null,
+  "cancelReason": null,
+  "createdAt": "2026-10-16T08:30:49.673Z",
+  "updatedAt": "2026-10-16T08:30:50.031Z",
+  "bakery": {
+    "id": "cmvapjio70000aziju5pfrb57",
+    "slug": "sweet-crumbs",
+    "name": "Sweet Crumbs Bakery",
+    "phone": "0772 000 000",
+    "currency": "UGX",
+    "mobileMoneyNumber": "0772 000 000"
+  },
+  "customer": {
+    "id": "cmvapk1bs0000d5ijd6z3bnq8",
+    "name": "Amara",
+    "phone": null,
+    "email": null
+  },
+  "items": [],
+  "selections": [
+    {
+      "id": "cmvapk1g90002d5ijw4milv0x",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjj55000hazij1ducxqlt",
+      "groupName": "Shape",
+      "optionName": "Round",
+      "value": "ROUND",
+      "price": 0
+    },
+    {
+      "id": "cmvapk1g90003d5ijkcrcnkng",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjj65000lazijn6kcieho",
+      "groupName": "Tiers",
+      "optionName": "2 tiers",
+      "value": "2",
+      "price": 30000
+    },
+    {
+      "id": "cmvapk1g90004d5ijbm8aorf4",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjj73000pazij0zndhl1f",
+      "groupName": "Size",
+      "optionName": "2 kg",
+      "value": null,
+      "price": 110000
+    },
+    {
+      "id": "cmvapk1g90005d5ijjrw4aw6u",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjj7v000tazijryien3zx",
+      "groupName": "Flavour",
+      "optionName": "Vanilla",
+      "value": null,
+      "price": 0
+    },
+    {
+      "id": "cmvapk1g90006d5ij1fda88ey",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjj9i000zazijvd7j3n68",
+      "groupName": "Icing colour",
+      "optionName": "Blush pink",
+      "value": "#F5B8C9",
+      "price": 0
+    },
+    {
+      "id": "cmvapk1g90007d5ijeqxu0dql",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjjaq0017azijmym0qfka",
+      "groupName": "Decorations",
+      "optionName": "Pearls",
+      "value": "pearls",
+      "price": 10000
+    },
+    {
+      "id": "cmvapk1g90008d5ijapthsl51",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "optionId": "cmvapjjaq0018azijxvt3vex1",
+      "groupName": "Decorations",
+      "optionName": "Fresh flowers",
+      "value": "flowers",
+      "price": 15000
+    }
+  ],
+  "images": [],
+  "quotations": [
+    {
+      "id": "cmvapk1pn000ed5ijm2kxk94i",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "amount": 165000,
+      "note": "Delivery to Ntinda included",
+      "createdById": "cmvapjjco001gazij9bz7vsy9",
+      "acceptedAt": null,
+      "createdAt": "2026-10-16T08:30:50.027Z"
+    }
+  ],
+  "payments": [],
+  "comments": [
+    {
+      "id": "cmvapk1jx000ad5ij7oiuc1nj",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "authorId": "cmvapk1bs0000d5ijd6z3bnq8",
+      "body": "Can the writing be gold?",
+      "fromBakery": false,
+      "createdAt": "2026-10-16T08:30:49.821Z",
+      "author": {
+        "id": "cmvapk1bs0000d5ijd6z3bnq8",
+        "name": "Amara"
+      }
+    },
+    {
+      "id": "cmvapk1mu000cd5ijsnafsar0",
+      "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+      "authorId": "cmvapjjco001gazij9bz7vsy9",
+      "body": "Yes, it's included",
+      "fromBakery": true,
+      "createdAt": "2026-10-16T08:30:49.926Z",
+      "author": {
+        "id": "cmvapjjco001gazij9bz7vsy9",
+        "name": "Dev Staff"
+      }
+    }
+  ]
+}

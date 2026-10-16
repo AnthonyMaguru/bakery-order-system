@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
-import 'features/catalogue/catalogue_screen.dart';
-import 'features/orders/orders_screen.dart';
+import 'features/bakeries/bakeries_screen.dart';
+import 'features/orders/my_orders_screen.dart';
+import 'features/outbox/outbox.dart';
 
 class BakeryApp extends StatelessWidget {
   const BakeryApp({super.key});
@@ -17,7 +18,8 @@ class BakeryApp extends StatelessWidget {
   }
 }
 
-/// Bottom navigation between the main tabs.
+/// Bottom navigation between the main tabs. Also sends any saved orders whenever
+/// the app comes back to the foreground, which is often when a connection returns.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -25,22 +27,47 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _index = 0;
 
-  static const _tabs = [CatalogueScreen(), OrdersScreen()];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) Outbox.instance.flush();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _tabs[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.cake_outlined), label: 'Cakes'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'My orders'),
-        ],
+      body: IndexedStack(index: _index, children: const [BakeriesScreen(), MyOrdersScreen()]),
+      bottomNavigationBar: ListenableBuilder(
+        listenable: Outbox.instance,
+        builder: (context, _) {
+          final waiting = Outbox.instance.items.length;
+          return NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: [
+              const NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Bakeries'),
+              NavigationDestination(
+                icon: Badge(isLabelVisible: waiting > 0, label: Text('$waiting'), child: const Icon(Icons.receipt_long_outlined)),
+                selectedIcon: const Icon(Icons.receipt_long),
+                label: 'My orders',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

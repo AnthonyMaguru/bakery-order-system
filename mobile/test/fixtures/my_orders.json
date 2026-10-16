@@ -1,0 +1,58 @@
+[
+  {
+    "id": "cmvapk1ft0001d5ijeea2m2zv",
+    "number": 1,
+    "clientRequestId": "6f1c2e0a-5b7d-4e5f-9a51-3c2b1d0e9f88",
+    "bakeryId": "cmvapjio70000aziju5pfrb57",
+    "customerId": "cmvapk1bs0000d5ijd6z3bnq8",
+    "type": "CUSTOM",
+    "status": "QUOTED",
+    "currency": "UGX",
+    "occasion": "Birthday",
+    "flavour": null,
+    "icing": null,
+    "size": null,
+    "colours": null,
+    "theme": null,
+    "inscription": "Happy 5th Birthday Amara",
+    "notes": null,
+    "budget": 120000,
+    "estimate": 165000,
+    "total": null,
+    "designImageUrl": null,
+    "dueDate": "2026-10-20T11:00:00.000Z",
+    "fulfilment": "DELIVERY",
+    "deliveryArea": "Ntinda",
+    "deliveryAddress": "Plot 12, Ntinda",
+    "deliveryFee": 5000,
+    "paymentStatus": "UNPAID",
+    "amountPaid": 0,
+    "cancelledBy": null,
+    "cancelReason": null,
+    "createdAt": "2026-10-16T08:30:49.673Z",
+    "updatedAt": "2026-10-16T08:30:50.031Z",
+    "bakery": {
+      "id": "cmvapjio70000aziju5pfrb57",
+      "slug": "sweet-crumbs",
+      "name": "Sweet Crumbs Bakery"
+    },
+    "customer": {
+      "id": "cmvapk1bs0000d5ijd6z3bnq8",
+      "name": "Amara",
+      "phone": null,
+      "email": null
+    },
+    "items": [],
+    "quotations": [
+      {
+        "id": "cmvapk1pn000ed5ijm2kxk94i",
+        "orderId": "cmvapk1ft0001d5ijeea2m2zv",
+        "amount": 165000,
+        "note": "Delivery to Ntinda included",
+        "createdById": "cmvapjjco001gazij9bz7vsy9",
+        "acceptedAt": null,
+        "createdAt": "2026-10-16T08:30:50.027Z"
+      }
+    ]
+  }
+]

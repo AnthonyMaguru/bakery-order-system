@@ -1,0 +1,256 @@
+[
+  {
+    "id": "cmvapjj4y000gazijsnd21iq6",
+    "kind": "SHAPE",
+    "name": "Shape",
+    "multiple": false,
+    "required": true,
+    "options": [
+      {
+        "id": "cmvapjj55000hazij1ducxqlt",
+        "name": "Round",
+        "price": 0,
+        "value": "ROUND",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj55000iazij6raf1eep",
+        "name": "Square",
+        "price": 0,
+        "value": "SQUARE",
+        "serves": null,
+        "imageUrl": null
+      }
+    ]
+  },
+  {
+    "id": "cmvapjj5x000jazijg90lmeuf",
+    "kind": "TIERS",
+    "name": "Tiers",
+    "multiple": false,
+    "required": true,
+    "options": [
+      {
+        "id": "cmvapjj65000kazij3u9oxy8k",
+        "name": "1 tier",
+        "price": 0,
+        "value": "1",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj65000lazijn6kcieho",
+        "name": "2 tiers",
+        "price": 30000,
+        "value": "2",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj65000mazija0157fki",
+        "name": "3 tiers",
+        "price": 60000,
+        "value": "3",
+        "serves": null,
+        "imageUrl": null
+      }
+    ]
+  },
+  {
+    "id": "cmvapjj6r000nazijmddgl4rj",
+    "kind": "SIZE",
+    "name": "Size",
+    "multiple": false,
+    "required": true,
+    "options": [
+      {
+        "id": "cmvapjj73000oazijkqmm90ur",
+        "name": "1 kg",
+        "price": 60000,
+        "value": null,
+        "serves": 8,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj73000pazij0zndhl1f",
+        "name": "2 kg",
+        "price": 110000,
+        "value": null,
+        "serves": 16,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj73000qazijxa881cdp",
+        "name": "3 kg",
+        "price": 160000,
+        "value": null,
+        "serves": 24,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj73000razij31u3ubnl",
+        "name": "4 kg+",
+        "price": 210000,
+        "value": null,
+        "serves": 32,
+        "imageUrl": null
+      }
+    ]
+  },
+  {
+    "id": "cmvapjj7p000sazijuda0so3e",
+    "kind": "FLAVOUR",
+    "name": "Flavour",
+    "multiple": false,
+    "required": true,
+    "options": [
+      {
+        "id": "cmvapjj7v000tazijryien3zx",
+        "name": "Vanilla",
+        "price": 0,
+        "value": null,
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj7v000uazijlgpa9f7p",
+        "name": "Chocolate",
+        "price": 5000,
+        "value": null,
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj7v000vazij6mupumqo",
+        "name": "Red velvet",
+        "price": 10000,
+        "value": null,
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj7v000wazijgwrd0r5c",
+        "name": "Marble",
+        "price": 5000,
+        "value": null,
+        "serves": null,
+        "imageUrl": null
+      }
+    ]
+  },
+  {
+    "id": "cmvapjj9a000xazijckaq65k7",
+    "kind": "ICING_COLOUR",
+    "name": "Icing colour",
+    "multiple": false,
+    "required": true,
+    "options": [
+      {
+        "id": "cmvapjj9i000yazijhx9s4qsc",
+        "name": "Vanilla cream",
+        "price": 0,
+        "value": "#FBEFD9",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i000zazijvd7j3n68",
+        "name": "Blush pink",
+        "price": 0,
+        "value": "#F5B8C9",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0010azijjygusbpx",
+        "name": "Lilac",
+        "price": 0,
+        "value": "#CDB8E8",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0011azijmzx7pzkd",
+        "name": "Sky blue",
+        "price": 0,
+        "value": "#A8CBEA",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0012azijjw56ud8w",
+        "name": "Mint",
+        "price": 0,
+        "value": "#BCE2C6",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0013azijcwvbaus0",
+        "name": "Butter yellow",
+        "price": 0,
+        "value": "#F6DC8F",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0014azijzo9f2bl2",
+        "name": "Chocolate",
+        "price": 0,
+        "value": "#7A4A33",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjj9i0015azijsbecknxc",
+        "name": "Ruby red",
+        "price": 0,
+        "value": "#C23A48",
+        "serves": null,
+        "imageUrl": null
+      }
+    ]
+  },
+  {
+    "id": "cmvapjjai0016aziji17bcma8",
+    "kind": "DECORATION",
+    "name": "Decorations",
+    "multiple": true,
+    "required": false,
+    "options": [
+      {
+        "id": "cmvapjjaq0017azijmym0qfka",
+        "name": "Pearls",
+        "price": 10000,
+        "value": "pearls",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjjaq0018azijxvt3vex1",
+        "name": "Fresh flowers",
+        "price": 15000,
+        "value": "flowers",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjjar0019azijcagtsgyz",
+        "name": "Sprinkles",
+        "price": 5000,
+        "value": "sprinkles",
+        "serves": null,
+        "imageUrl": null
+      },
+      {
+        "id": "cmvapjjar001aazijq5tfe5i9",
+        "name": "Candles",
+        "price": 5000,
+        "value": "candles",
+        "serves": null,
+        "imageUrl": null
+      }
+    ]
+  }
+]
