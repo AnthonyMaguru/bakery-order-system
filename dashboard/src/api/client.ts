@@ -18,15 +18,30 @@ async function authHeaders(): Promise<Record<string, string>> {
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(await authHeaders()),
-      ...init.headers,
-    },
-  })
-  const body = res.status === 204 ? null : await res.json()
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeaders()),
+        ...init.headers,
+      },
+    })
+  } catch {
+    // fetch only throws when the request never reached the server.
+    throw new ApiError(0, "Couldn't reach the server. Check the connection and try again.")
+  }
+  const body = res.status === 204 ? null : await res.json().catch(() => null)
   if (!res.ok) throw new ApiError(res.status, body?.error ?? res.statusText)
   return body as T
+}
+
+// JSON request helpers, so callers don't repeat method and body.
+export const send = <T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown) =>
+  api<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) })
+
+export const query = (params: Record<string, string | number | undefined>) => {
+  const entries = Object.entries(params).filter((e): e is [string, string | number] => e[1] !== undefined && e[1] !== '')
+  return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : ''
 }
