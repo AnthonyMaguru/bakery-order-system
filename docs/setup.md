@@ -14,6 +14,8 @@ You need:
 
 Jump to your system: [Windows](#windows) · [macOS](#macos) · [Linux (Ubuntu)](#linux-ubuntu). Then continue with [Get the project running](#get-the-project-running).
 
+Computer too slow, or can't install all this? [Use GitHub Codespaces](#slow-computer-use-github-codespaces) instead.
+
 ---
 
 ## Windows
@@ -235,6 +237,31 @@ DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/postgres
 ```
 
 Then carry on with `npm run db:migrate`.
+
+---
+
+## Slow computer? Use GitHub Codespaces
+
+Codespaces runs the whole project on a GitHub server and gives you VS Code in your browser. Nothing to install, and your computer only runs the browser tab. The setup lives in [`.devcontainer/`](../.devcontainer/): Node.js 22, Flutter, PostgreSQL and the VS Code extensions.
+
+1. On the repo's GitHub page: **Code → Codespaces → Create codespace on main** (or on your branch).
+2. The first start takes about 5–10 minutes while it installs everything, creates the tables and adds the sample data. Later starts take under a minute.
+3. Open two terminals (**Terminal → New Terminal**) and run:
+   ```bash
+   cd backend && npm run dev
+   ```
+   ```bash
+   cd dashboard && npm run dev
+   ```
+   The dashboard opens in a new browser tab. If it doesn't, open the **Ports** tab and click the globe icon next to port 5173.
+
+Things to know:
+
+- **Free hours are limited:** 120 core-hours a month on a personal account, which is 60 hours on the default 2-core machine. Students get more with [GitHub Education](https://education.github.com/pack). Unused codespaces stop after 30 minutes, but stop yours yourself when you finish (**Code → Codespaces → ⋯ → Stop codespace**). Delete old ones you don't need.
+- **Commit and push before deleting a codespace.** Work that isn't pushed is lost with it.
+- **The mobile app can't run on a phone or emulator from a codespace.** `flutter analyze` and `flutter test` work. To try the app on a phone, use your own computer.
+- **The env files are created for you:** `backend/.env` and `dashboard/.env.local`. The dashboard's copy uses `VITE_API_URL=/api`, so API calls go through the dashboard's dev server. A browser tab on a Codespaces address can't reach `localhost:4000` directly.
+- **VS Code on your computer can also run the same setup locally:** "Dev Containers: Reopen in Container", which needs Docker. Stop the project's normal database first (`docker compose stop`), because both use port 5432.
 
 ---
 

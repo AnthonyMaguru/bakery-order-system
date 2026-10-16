@@ -1,0 +1,14 @@
+# Adds the dev container to the root docker-compose.yml, which already defines the `db` service.
+# Relative paths here are resolved from the repo root (the first compose file's folder).
+services:
+  app:
+    build:
+      context: .devcontainer
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspaces/bakery-order-system:cached
+    # Share the database's network so `localhost:5432` works exactly as in backend/.env.example.
+    network_mode: service:db
+    command: sleep infinity
+    depends_on:
+      - db
