@@ -152,6 +152,7 @@ model Bakery {
   stockItems   StockItem[]
   blockedDates BlockedDate[]
   orders       Order[]
+  application  BakeryApplication?
 }
 
 model BakeryApplication {
@@ -163,9 +164,11 @@ model BakeryApplication {
   city        String
   notes       String?
   status      BakeryApplicationStatus @default(PENDING)
+  bakeryId    String?                 @unique
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
 
+  bakery      Bakery?                 @relation(fields: [bakeryId], references: [id], onDelete: SetNull)
   @@index([status, createdAt])
   @@index([email])
 }

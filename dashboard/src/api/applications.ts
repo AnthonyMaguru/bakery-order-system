@@ -37,3 +37,6 @@ export const listBakeryApplications = () => api<BakeryApplication[]>('/bakery-ap
 
 export const updateBakeryApplicationStatus = (id: string, status: BakeryApplicationStatus) =>
   send<BakeryApplication>('PATCH', `/bakery-applications/${id}`, { status })
+
+export const onboardBakeryApplication = (id: string) =>
+  send<{ id: string; slug: string; name: string }>('POST', `/bakery-applications/${id}/onboard`)

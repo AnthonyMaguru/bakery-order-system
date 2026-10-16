@@ -26,3 +26,11 @@ bakeryApplicationsRouter.patch("/:applicationId", requireAuth, async (req, res) 
   const { status } = BakeryApplicationStatusUpdate.parse(req.body);
   res.json(await applications.updateApplicationStatus(req.params.applicationId, status));
 });
+
+bakeryApplicationsRouter.post("/:applicationId/onboard", requireAuth, async (req, res) => {
+  if (req.user!.role !== "ADMIN") {
+    res.status(403).json({ error: "Platform admin access required" });
+    return;
+  }
+  res.status(201).json(await applications.onboardApplication(req.params.applicationId));
+});

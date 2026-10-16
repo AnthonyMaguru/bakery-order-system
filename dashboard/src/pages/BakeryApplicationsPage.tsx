@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   listBakeryApplications,
+  onboardBakeryApplication,
   updateBakeryApplicationStatus,
   type BakeryApplication,
   type BakeryApplicationStatus,
@@ -37,6 +38,22 @@ export function BakeryApplicationsPage() {
       setApplications((current) => current.map((item) => (item.id === updated.id ? updated : item)))
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not update this application.')
+    } finally {
+      setSavingId(null)
+    }
+
+  }
+
+  async function onboard(application: BakeryApplication) {
+    setSavingId(application.id)
+    setError(null)
+    try {
+      await onboardBakeryApplication(application.id)
+      setApplications((current) => current.map((item) => (
+        item.id === application.id ? { ...item, status: 'APPROVED' } : item
+      )))
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not onboard this bakery.')
     } finally {
       setSavingId(null)
     }
@@ -85,8 +102,10 @@ export function BakeryApplicationsPage() {
                     {STATUS_ORDER.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}
                   </select>
                 </label>
-                {application.status === 'APPROVED' && (
-                  <span className="small muted">Create the bakery and add the owner in the normal setup flow.</span>
+                {application.status !== 'DECLINED' && (
+                  <button className="btn btn-dark btn-sm" type="button" disabled={savingId === application.id} onClick={() => void onboard(application)}>
+                    {savingId === application.id ? 'Onboarding…' : 'Onboard bakery'}
+                  </button>
                 )}
               </div>
             </article>

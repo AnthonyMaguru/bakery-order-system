@@ -63,8 +63,9 @@ Custom and BULK:         SUBMITTED → QUOTED → CONFIRMED → PREPARING → RE
 | POST | `/bakery-applications` | public | Submit a bakery for review |
 | GET | `/bakery-applications` | platform admin | Review submitted applications |
 | PATCH | `/bakery-applications/:applicationId` | platform admin | Set `PENDING`, `CONTACTED`, `APPROVED` or `DECLINED` |
+| POST | `/bakery-applications/:applicationId/onboard` | platform admin | Create the bakery workspace, approve the application, and add the matching signed-in user as owner when available |
 
-Applications do not create a public bakery immediately. After review, the platform team creates the bakery, adds the owner as an `OWNER` member, and contacts them with the sign-in and setup details.
+Applications do not create a public bakery immediately. After review, the platform admin uses the onboarding action to create the bakery workspace. If the applicant has already signed in, their matching email is added as an `OWNER`; otherwise the owner must sign in once before being added from Settings.
 
 ### Bakeries (public)
 
