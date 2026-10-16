@@ -8,6 +8,9 @@ node_modules/
 .env.*
 !.env.example
 secrets/
+# Firebase app config files. Not secret, but each copy is tied to one Firebase project.
+google-services.json
+GoogleService-Info.plist
 *service-account*.json
 firebase-adminsdk-*.json
 

@@ -4,6 +4,7 @@ import { buildCalendar, dayStatus, type CapacityRules } from "../src/modules/bak
 import { isAvailable, resolveSelections, type BuilderGroup } from "../src/modules/builder/selection.js";
 import { cancelError, paymentStatusFor, staffStatusError } from "../src/modules/orders/order-rules.js";
 import { stockLevel } from "../src/modules/stock/stock-level.js";
+import { detectImageType } from "../src/modules/uploads/image-type.js";
 
 // Pure business rules; no database needed.
 
@@ -127,5 +128,15 @@ describe("stock levels", () => {
     expect(stockLevel({ quantity: 4, lowAt: 5 })).toBe("LOW");
     expect(stockLevel({ quantity: 6, lowAt: 5 })).toBe("OK");
     expect(stockLevel({ quantity: 1, lowAt: null })).toBe("OK");
+  });
+});
+
+describe("photo uploads", () => {
+  it("knows images by their first bytes, not their name", () => {
+    expect(detectImageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
+    expect(detectImageType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe("image/png");
+    expect(detectImageType(new TextEncoder().encode("RIFF\0\0\0\0WEBPVP8 "))).toBe("image/webp");
+    expect(detectImageType(new TextEncoder().encode("<svg onload=alert(1)>"))).toBeNull();
+    expect(detectImageType(new Uint8Array([]))).toBeNull();
   });
 });

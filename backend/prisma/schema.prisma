@@ -105,6 +105,7 @@ model User {
   quotations  Quotation[]
   comments    OrderComment[]
   payments    Payment[]
+  uploads     Upload[]
 }
 
 model Bakery {
@@ -385,4 +386,20 @@ model Payment {
 
   order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   recordedBy User  @relation(fields: [recordedById], references: [id])
+}
+
+// A photo uploaded from the app or dashboard: inspiration photos, the builder
+// preview, product pictures. Kept in the database so it survives hosts whose disk
+// is wiped on restart. The app compresses photos before uploading them.
+model Upload {
+  id          String   @id @default(cuid())
+  ownerId     String
+  contentType String
+  size        Int
+  data        Bytes
+  createdAt   DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
 }
