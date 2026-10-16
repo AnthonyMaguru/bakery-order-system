@@ -13,6 +13,7 @@ bakery-order-system/
 ├── docs/
 │   └── api.md           API contract shared by mobile and dashboard
 ├── docker-compose.yml   Local PostgreSQL database
+├── .devcontainer/       GitHub Codespaces / dev container setup
 └── .github/             CI, pull request and issue templates
 ```
 

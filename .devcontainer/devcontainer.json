@@ -1,0 +1,40 @@
+{
+  "name": "Bakery Order System",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/bakery-order-system",
+  "remoteUser": "node",
+
+  // 2 cores / 8 GB is enough and uses the free Codespaces hours slowest.
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "forwardPorts": [5173, 4000, 5432],
+  "portsAttributes": {
+    "5173": { "label": "Dashboard", "onAutoForward": "openBrowser" },
+    "4000": { "label": "API" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dart-code.flutter",
+        "dart-code.dart-code",
+        "prisma.prisma",
+        "dbaeumer.vscode-eslint",
+        "oxc.oxc-vscode",
+        "editorconfig.editorconfig",
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}
