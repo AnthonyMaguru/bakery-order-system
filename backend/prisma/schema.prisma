@@ -88,6 +88,13 @@ enum CancelledBy {
   BAKERY
 }
 
+enum BakeryApplicationStatus {
+  PENDING
+  CONTACTED
+  APPROVED
+  DECLINED
+}
+
 model User {
   id          String   @id @default(cuid())
   firebaseUid String   @unique
@@ -145,6 +152,25 @@ model Bakery {
   stockItems   StockItem[]
   blockedDates BlockedDate[]
   orders       Order[]
+  application  BakeryApplication?
+}
+
+model BakeryApplication {
+  id          String                  @id @default(cuid())
+  bakeryName  String
+  contactName String
+  email       String
+  phone       String
+  city        String
+  notes       String?
+  status      BakeryApplicationStatus @default(PENDING)
+  bakeryId    String?                 @unique
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  bakery      Bakery?                 @relation(fields: [bakeryId], references: [id], onDelete: SetNull)
+  @@index([status, createdAt])
+  @@index([email])
 }
 
 model BakeryMember {
