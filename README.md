@@ -55,7 +55,7 @@ flutter pub get
 flutter run
 ```
 
-Firebase isn't needed to start. The backend's `AUTH_DEV_BYPASS=true` setting lets the dashboard and app call the API with a fake user header until Firebase is set up (see [docs/api.md](docs/api.md#authentication)).
+Firebase isn't needed to start; [docs/firebase.md](docs/firebase.md) explains how to set it up when you're ready. The backend's `AUTH_DEV_BYPASS=true` setting lets the dashboard and app call the API with a fake user header until Firebase is set up (see [docs/api.md](docs/api.md#authentication)).
 
 ## Working together
 

@@ -136,7 +136,21 @@ Only `bakeryId`, `type`, `dueDate` and `fulfilment` are always required, so a cu
 - `deliveryArea` must be one of the bakery's `deliveryAreas`. `DELIVERY` also needs `deliveryAddress`.
 - `optionIds` come from the builder. Only one option per group unless the group is `multiple`, and required groups need a choice.
 - `items` with a customisable product on a `CUSTOM` order means "based on this cake".
-- `designImageUrl` is a picture of the builder preview. Images are compressed on the phone and uploaded straight to Firebase Storage; the API only stores their URLs, at most 5 inspiration photos per order.
+- `designImageUrl` is a picture of the builder preview. Upload photos with `POST /uploads` first and send their URLs, at most 5 inspiration photos per order.
+
+### Photos
+
+| Method | Path | Who | Purpose |
+|---|---|---|---|
+| POST | `/uploads` | signed in | Upload one photo. The body **is the image** (`Content-Type: image/jpeg`, `image/png` or `image/webp`), not a form. Returns `{ "id": "…", "url": "…" }` |
+| GET | `/uploads/:id` | anyone | The photo. Cached for a year, since an upload never changes |
+
+Put the returned `url` in `inspirationImageUrls` or `designImageUrl` on an order, or in a product's `imageUrl`.
+
+- Compress on the phone first: about 1600 px on the longest side, JPEG quality 80, usually 200 to 400 KB. The limit is **2 MB** (413 above it).
+- The file type is checked from its first bytes, so a renamed file of another kind gets 415.
+- At most 40 uploads per person per day (429).
+- Links are public but impossible to guess, like Firebase Storage download links.
 
 ### Users
 

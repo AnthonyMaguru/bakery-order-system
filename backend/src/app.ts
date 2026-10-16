@@ -9,6 +9,7 @@ import { builderRouter } from "./modules/builder/builder.routes.js";
 import { bakeryOrdersRouter, ordersRouter } from "./modules/orders/orders.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
 import { stockRouter } from "./modules/stock/stock.routes.js";
+import { uploadsRouter } from "./modules/uploads/uploads.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 
 export function createApp() {
@@ -25,6 +26,7 @@ export function createApp() {
 
   app.use("/api/users", usersRouter);
   app.use("/api/orders", ordersRouter);
+  app.use("/api/uploads", uploadsRouter);
   // Everything that belongs to one bakery lives under /api/bakeries/:bakeryId.
   app.use("/api/bakeries", productsRouter, builderRouter, stockRouter, bakeryOrdersRouter, bakeriesRouter);
 

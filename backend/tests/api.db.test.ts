@@ -245,6 +245,52 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
     });
   });
 
+  describe("photo uploads", () => {
+    // A real 1 by 1 pixel PNG.
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==", "base64");
+
+    it("stores a photo and serves it back to any page", async () => {
+      const res = await api.post("/api/uploads").set(customer).set("Content-Type", "image/png").send(png);
+      expect(res.status).toBe(201);
+      expect(res.body.url).toMatch(/\/api\/uploads\/[a-z0-9]+$/);
+
+      const photo = await api.get(`/api/uploads/${res.body.id}`).buffer(true).parse((r, done) => {
+        const chunks: Buffer[] = [];
+        r.on("data", (c: Buffer) => chunks.push(c));
+        r.on("end", () => done(null, Buffer.concat(chunks)));
+      });
+      expect(photo.status).toBe(200);
+      expect(photo.headers["content-type"]).toBe("image/png");
+      expect(photo.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+      expect(Buffer.compare(photo.body as Buffer, png)).toBe(0);
+    });
+
+    it("refuses files that aren't photos, are too big, or come from no one", async () => {
+      const text = await api.post("/api/uploads").set(customer).set("Content-Type", "image/png").send(Buffer.from("not really a picture"));
+      expect(text.status).toBe(415);
+      const big = await api.post("/api/uploads").set(customer).set("Content-Type", "image/jpeg").send(Buffer.alloc(3 * 1024 * 1024, 0xff));
+      expect(big.status).toBe(413);
+      expect(big.body.error).toMatch(/2 MB/);
+      expect((await api.post("/api/uploads").set("Content-Type", "image/png").send(png)).status).toBe(401);
+      expect((await api.get("/api/uploads/missing")).status).toBe(404);
+    });
+
+    it("lets an order use the photo link", async () => {
+      const upload = await api.post("/api/uploads").set(customer).set("Content-Type", "image/png").send(png);
+      const order = await api.post("/api/orders").set(customer).send({
+        bakeryId,
+        type: "CUSTOM",
+        dueDate: at(readyMadeDay),
+        fulfilment: "PICKUP",
+        notes: "Like the photo please",
+        inspirationImageUrls: [upload.body.url],
+        designImageUrl: upload.body.url,
+      });
+      expect(order.status).toBe(201);
+      expect(order.body.images[0].url).toBe(upload.body.url);
+    });
+  });
+
   describe("bakery setup", () => {
     it("stops taking custom orders on a full day", async () => {
       const booked = (await api.get(`/api/bakeries/${bakeryId}/availability?from=${customDay}&days=1`)).body[0].booked;
