@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/order.dart';
+import '../auth/auth.dart';
 import '../outbox/outbox.dart';
 import 'order_detail_screen.dart';
 
@@ -17,10 +18,21 @@ class MyOrdersScreen extends StatefulWidget {
 }
 
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
-  late Future<List<Order>> _orders = _load();
+  late Future<List<Order>> _orders;
+  var _started = false;
   bool _past = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    _orders = _load();
+  }
+
   Future<List<Order>> _load() async {
+    if (!mounted) return [];
+    if (!await ensureSignedIn(context)) return [];
     final data = await api.get('/orders') as List;
     return data.map((o) => Order.fromJson(o as Map<String, dynamic>)).toList();
   }

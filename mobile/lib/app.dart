@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
 import 'features/bakeries/bakeries_screen.dart';
+import 'features/auth/push.dart';
 import 'features/orders/my_orders_screen.dart';
 import 'features/outbox/outbox.dart';
 
@@ -13,6 +14,8 @@ class BakeryApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bakery Orders',
       theme: appTheme,
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: messengerKey,
       home: const HomeShell(),
     );
   }

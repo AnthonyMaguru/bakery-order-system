@@ -1,6 +1,6 @@
 # Setting up Firebase
 
-Firebase gives the project real sign-in (email and password, or Google) and push notifications. Photos don't use Firebase: they go to our own API (`POST /uploads`), so **no card or billing is needed**. Stay on the free **Spark** plan and don't upgrade.
+Firebase gives the project real sign-in (email and password, or Google) and push notifications. Photos and builder previews don't use Firebase: they go to our own API (`POST /uploads`), so **no card or billing is needed**. Stay on the free **Spark** plan and don't upgrade.
 
 Until this is done, everything keeps working with the test login (`AUTH_DEV_BYPASS=true`).
 

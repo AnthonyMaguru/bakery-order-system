@@ -1,7 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../core/api_client.dart';
 import '../../core/format.dart';
+import '../../core/uploads.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../orders/submit.dart';
@@ -21,6 +25,7 @@ class ReviewStep extends StatefulWidget {
 
 class _ReviewStepState extends State<ReviewStep> {
   CustomOrderDraft get d => widget.draft;
+  final _previewKey = GlobalKey();
   bool _sending = false;
   String? _error;
 
@@ -32,11 +37,34 @@ class _ReviewStepState extends State<ReviewStep> {
       _error = null;
     });
     try {
+      if (d.useBuilder && d.designImageUrl == null) {
+        await _uploadPreview();
+      }
+      if (!mounted) return;
       await submitOrder(context, body: d.toJson(), title: d.title, bakeryName: d.bakery.name, custom: true);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
+    } on NetworkException catch (e) {
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _uploadPreview() async {
+    await WidgetsBinding.instance.endOfFrame;
+    final boundary = _previewKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final image = await boundary.toImage(pixelRatio: 2);
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (data == null) return;
+      d.designImageUrl = await uploadPhoto(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        contentType: 'image/png',
+      );
+    } finally {
+      image.dispose();
     }
   }
 
@@ -68,7 +96,10 @@ class _ReviewStepState extends State<ReviewStep> {
                         height: 104,
                         margin: const EdgeInsets.only(right: 16),
                         decoration: BoxDecoration(color: AppColors.sand, borderRadius: BorderRadius.circular(16)),
-                        child: CakePreview(look: rules.lookFor(d.groups, d.selection), description: d.designSummary, height: 104),
+                        child: RepaintBoundary(
+                          key: _previewKey,
+                          child: CakePreview(look: rules.lookFor(d.groups, d.selection), description: d.designSummary, height: 104),
+                        ),
                       ),
                     Expanded(
                       child: Column(
