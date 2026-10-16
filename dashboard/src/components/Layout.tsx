@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { signOut } from 'firebase/auth'
 import { useBakery } from '../context/bakery-context'
+import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
 import { Icon, type IconName } from './Icon'
 
 const LINKS: { to: string; label: string; icon: IconName }[] = [
@@ -52,6 +54,11 @@ export function Layout() {
         <div className="sidebar-user">
           <strong>{me.name ?? me.email ?? 'Signed in'}</strong>
           <span>{isOwner ? 'Owner' : 'Staff'}</span>
+          {firebaseEnabled && (
+            <button type="button" className="btn btn-sm" style={{ color: '#e6d8ce', padding: 0, justifyContent: 'flex-start' }} onClick={() => void signOut(firebaseAuth())}>
+              Sign out
+            </button>
+          )}
         </div>
       </aside>
       <main className="main">

@@ -1,8 +1,10 @@
+import { signOut } from 'firebase/auth'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { getMe, getSettings } from '../api/bakeries'
 import { getOrdersSummary } from '../api/orders'
 import { listStock } from '../api/stock'
 import type { BakerySettings, Me } from '../types/api'
+import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
 import { BakeryContext } from './bakery-context'
 
 const STORAGE_KEY = 'dashboard.bakeryId'
@@ -86,6 +88,11 @@ export function BakeryProvider({ children }: { children: ReactNode }) {
       <main className="main">
         <h1>You're not on a bakery's staff yet</h1>
         <p className="muted">Ask the bakery owner to add {me.email ?? 'your email'} in Settings, then reload this page.</p>
+        {firebaseEnabled && (
+          <button type="button" className="btn btn-outline" style={{ alignSelf: 'flex-start' }} onClick={() => void signOut(firebaseAuth())}>
+            Sign in with another account
+          </button>
+        )}
       </main>
     )
   }
