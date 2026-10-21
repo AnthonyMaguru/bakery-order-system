@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/bakery.dart';
+import '../auth/push.dart';
 import 'bakery_screen.dart';
 
 /// The first tab. With one bakery (the pilot) it opens that bakery straight away;
@@ -21,15 +22,28 @@ class _BakeriesScreenState extends State<BakeriesScreen> {
   static const _areaKey = 'area';
   late Future<(Cached<dynamic>, String?)> _data = _load();
 
+  void _setData(Future<(Cached<dynamic>, String?)> next) {
+    if (!mounted) return;
+    setState(() {
+      _data = next;
+    });
+  }
+
   Future<(Cached<dynamic>, String?)> _load() async {
     final prefs = await SharedPreferences.getInstance();
     return (await cachedGet('/bakeries'), prefs.getString(_areaKey));
   }
 
   Future<void> _chooseArea(List<Bakery> bakeries, String? current) async {
+    if (!mounted) return;
+
     final areas = {for (final b in bakeries) ...b.deliveryAreas}.toList()..sort();
+    final sheetContext = navigatorKey.currentContext;
+    if (sheetContext == null || !mounted) return;
+
     final area = await showModalBottomSheet<String>(
-      context: context,
+      context: sheetContext,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -51,7 +65,7 @@ class _BakeriesScreenState extends State<BakeriesScreen> {
     if (area == null) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_areaKey, area);
-    setState(() => _data = _load());
+    _setData(_load());
   }
 
   @override
@@ -60,7 +74,14 @@ class _BakeriesScreenState extends State<BakeriesScreen> {
       future: _data,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Scaffold(body: ErrorView(message: snapshot.error.toString(), onRetry: () => setState(() => _data = _load())));
+          return Scaffold(
+            body: ErrorView(
+              message: snapshot.error.toString(),
+              onRetry: () {
+                _setData(_load());
+              },
+            ),
+          );
         }
         if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
         final (cached, area) = snapshot.data!;
@@ -73,7 +94,9 @@ class _BakeriesScreenState extends State<BakeriesScreen> {
         return Scaffold(
           body: SafeArea(
             child: RefreshIndicator(
-              onRefresh: () async => setState(() => _data = _load()),
+              onRefresh: () async {
+                _setData(_load());
+              },
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -136,7 +159,11 @@ class _BakeryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final next = bakery.nextCustomDate;
     return InkWell(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => BakeryScreen(bakery: bakery, savedAt: savedAt))),
+      onTap: () {
+        final nav = navigatorKey.currentState;
+        if (nav == null || !nav.mounted) return;
+        nav.push(MaterialPageRoute<void>(builder: (_) => BakeryScreen(bakery: bakery, savedAt: savedAt)));
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(vertical: 16),

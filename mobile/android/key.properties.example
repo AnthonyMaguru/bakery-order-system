@@ -1,0 +1,4 @@
+storeFile=../release-keystore/upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=bakery-orders
+keyPassword=CHANGE_ME

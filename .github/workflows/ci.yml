@@ -62,7 +62,7 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  mobile:
+  mobile-android:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -76,3 +76,20 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: flutter build apk --debug
+
+  mobile-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build ios --no-codesign
