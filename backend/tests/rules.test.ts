@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, dayKey, isDayKey, isoWeekday } from "../src/lib/dates.js";
+import { orderNeedsDeadlineReminder } from "../src/jobs/deadline-reminders.js";
 import { buildCalendar, dayStatus, type CapacityRules } from "../src/modules/bakeries/availability.js";
 import { isAvailable, resolveSelections, type BuilderGroup } from "../src/modules/builder/selection.js";
 import { cancelError, paymentStatusFor, staffStatusError } from "../src/modules/orders/order-rules.js";
@@ -119,6 +120,45 @@ describe("order status rules", () => {
     expect(paymentStatusFor(165000, 80000)).toBe("DEPOSIT_PAID");
     expect(paymentStatusFor(165000, 165000)).toBe("PAID");
     expect(paymentStatusFor(null, 50000)).toBe("DEPOSIT_PAID");
+  });
+
+  it("flags stale open orders that are due soon for a reminder", () => {
+    const now = new Date("2026-11-09T12:00:00Z");
+    expect(
+      orderNeedsDeadlineReminder(
+        {
+          status: "CONFIRMED",
+          dueDate: new Date("2026-11-10T18:00:00Z"),
+          updatedAt: new Date("2026-11-08T10:00:00Z"),
+          lastReminderAt: null,
+        },
+        now,
+      ),
+    ).toBe(true);
+
+    expect(
+      orderNeedsDeadlineReminder(
+        {
+          status: "READY",
+          dueDate: new Date("2026-11-12T18:00:00Z"),
+          updatedAt: new Date("2026-11-08T10:00:00Z"),
+          lastReminderAt: null,
+        },
+        now,
+      ),
+    ).toBe(false);
+
+    expect(
+      orderNeedsDeadlineReminder(
+        {
+          status: "CONFIRMED",
+          dueDate: new Date("2026-11-12T18:00:00Z"),
+          updatedAt: new Date("2026-11-08T10:00:00Z"),
+          lastReminderAt: new Date("2026-11-08T12:00:00Z"),
+        },
+        now,
+      ),
+    ).toBe(false);
   });
 });
 

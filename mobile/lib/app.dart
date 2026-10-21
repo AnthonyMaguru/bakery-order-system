@@ -1,10 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'core/firebase_setup.dart';
 import 'core/theme.dart';
-import 'features/bakeries/bakeries_screen.dart';
 import 'features/auth/push.dart';
+import 'features/auth/sign_in_screen.dart';
+import 'features/bakeries/bakeries_screen.dart';
 import 'features/orders/my_orders_screen.dart';
 import 'features/outbox/outbox.dart';
+
+bool shouldPromptSignIn({required bool firebaseReady, required bool signedIn}) => firebaseReady && !signedIn;
 
 class BakeryApp extends StatelessWidget {
   const BakeryApp({super.key});
@@ -16,7 +21,16 @@ class BakeryApp extends StatelessWidget {
       theme: appTheme,
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: messengerKey,
-      home: const HomeShell(),
+      home: StreamBuilder<User?>(
+        stream: firebaseReady ? FirebaseAuth.instance.authStateChanges() : Stream<User?>.value(null),
+        builder: (context, snapshot) {
+          final signedIn = snapshot.data != null;
+          if (firebaseReady && !signedIn) {
+            return const SignInScreen();
+          }
+          return const HomeShell();
+        },
+      ),
     );
   }
 }
@@ -47,7 +61,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) Outbox.instance.flush();
+    if (state == AppLifecycleState.resumed) {
+      Outbox.instance.flush();
+    }
   }
 
   @override

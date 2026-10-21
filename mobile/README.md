@@ -12,6 +12,16 @@ flutter test
 
 The backend must be running and seeded (see `../backend`). With `AUTH_DEV_BYPASS=true` on the backend and no Firebase settings, the app uses a test customer (`DEV_USER`, default `dev-customer`). For Firebase, pass the values from `firebase.example.json` with `--dart-define-from-file=firebase.json`.
 
+## Firebase setup for Android and iOS
+
+This is a single Flutter codebase, but Android and iOS still each need their native Firebase config:
+
+- Android: copy `android/app/google-services.json.example` to `android/app/google-services.json` and fill in the real values for your Firebase Android app.
+- iOS: copy `ios/Runner/GoogleService-Info.plist.example` to `ios/Runner/GoogleService-Info.plist`, then add that file to the Runner target in Xcode and match the bundle ID to your Firebase iOS app.
+- Shared Flutter config: copy `firebase.example.json` to `firebase.json` and pass it with `--dart-define-from-file=firebase.json` for the app's Dart-side `FirebaseOptions`.
+
+If you use FlutterFire, `flutterfire configure` will generate the platform config files automatically. The repo keeps the real values out of git via the patterns in `.gitignore`.
+
 ## What customers can do
 
 - **Find a bakery.** With one bakery (the pilot) the app opens it straight away. With more, customers choose their area and see the bakeries that deliver there, soonest available first.

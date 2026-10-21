@@ -77,6 +77,16 @@ void main() {
     expect(Outbox.instance.waiting, hasLength(1));
   });
 
+  test('backs off after repeated network failures', () async {
+    await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
+    expect(await Outbox.instance.flush(), 0);
+    expect(Outbox.instance.retryDelay, const Duration(seconds: 60));
+
+    backend.online = true;
+    expect(await Outbox.instance.flush(), 1);
+    expect(Outbox.instance.retryDelay, const Duration(seconds: 30));
+  });
+
   test('keeps the reason when the bakery refuses a saved order', () async {
     await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
     backend

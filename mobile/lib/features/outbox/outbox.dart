@@ -73,15 +73,20 @@ class Outbox extends ChangeNotifier {
 
   static final instance = Outbox._();
   static const _key = 'outbox';
+  static const _initialRetryDelay = Duration(seconds: 30);
+  static const _maxRetryDelay = Duration(minutes: 5);
 
   List<OutboxItem> _items = [];
   Timer? _timer;
   bool _flushing = false;
+  Duration _retryDelay = _initialRetryDelay;
 
   List<OutboxItem> get items => List.unmodifiable(_items);
   List<OutboxItem> get waiting => _items.where((i) => i.error == null).toList();
+  Duration get retryDelay => _retryDelay;
 
   Future<void> start() async {
+    _retryDelay = _initialRetryDelay;
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_key);
     if (saved != null) {
@@ -91,12 +96,21 @@ class Outbox extends ChangeNotifier {
     await flush();
   }
 
+  void _scheduleRetry() {
+    _timer?.cancel();
+    if (waiting.isEmpty) {
+      _retryDelay = _initialRetryDelay;
+      _timer = null;
+      return;
+    }
+    _timer = Timer(_retryDelay, () => flush());
+  }
+
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(_items.map((i) => i.toJson()).toList()));
     notifyListeners();
-    _timer?.cancel();
-    _timer = waiting.isEmpty ? null : Timer.periodic(const Duration(seconds: 30), (_) => flush());
+    _scheduleRetry();
   }
 
   /// Sends the order now, or keeps it when there's no connection.
@@ -131,9 +145,12 @@ class Outbox extends ChangeNotifier {
           await api.post('/orders', item.body);
           _items = _items.where((i) => i.clientRequestId != item.clientRequestId).toList();
           sent++;
+          _retryDelay = _initialRetryDelay;
         } on ApiException catch (e) {
           _items = [for (final i in _items) i.clientRequestId == item.clientRequestId ? i.withError(e.message) : i];
         } on NetworkException {
+          final nextDelay = _retryDelay < _maxRetryDelay ? _retryDelay * 2 : _maxRetryDelay;
+          _retryDelay = nextDelay;
           break;
         }
       }
@@ -152,6 +169,7 @@ class Outbox extends ChangeNotifier {
   @visibleForTesting
   void reset() {
     _items = [];
+    _retryDelay = _initialRetryDelay;
     _timer?.cancel();
     _timer = null;
   }

@@ -43,6 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/key.properties
+/android/**/*.jks
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase native config files (keep real values out of source control)
+firebase.json
+**/google-services.json
+**/GoogleService-Info.plist
+!**/google-services.json.example
+!**/GoogleService-Info.plist.example
