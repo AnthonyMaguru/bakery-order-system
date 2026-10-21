@@ -13,12 +13,22 @@ const EnvSchema = z.object({
   // Path to the Firebase service-account JSON. Optional while developing with AUTH_DEV_BYPASS.
   GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
   // Lets you call the API without Firebase by sending an `x-dev-user` header.
-  // Ignored when NODE_ENV=production.
+  // Disabled in production; keep it only for local development.
   AUTH_DEV_BYPASS: z
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
 });
 
-export const env = EnvSchema.parse(process.env);
+export function parseEnv(input: NodeJS.ProcessEnv = process.env) {
+  const parsed = EnvSchema.parse(input);
+
+  if (parsed.NODE_ENV === "production" && parsed.AUTH_DEV_BYPASS) {
+    throw new Error("AUTH_DEV_BYPASS cannot be enabled when NODE_ENV=production.");
+  }
+
+  return parsed;
+}
+
+export const env = parseEnv(process.env);
 export const isProduction = env.NODE_ENV === "production";

@@ -1,5 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import { parseEnv } from "../src/config/env.js";
 import { createApp } from "../src/app.js";
 
 // These tests don't touch the database. Add DB-backed tests once the schema settles.
@@ -20,5 +21,17 @@ describe("API", () => {
   it("returns JSON 404 for unknown routes", async () => {
     const res = await request(app).get("/api/nope");
     expect(res.status).toBe(404);
+  });
+
+  it("rejects dev auth bypass in production", () => {
+    expect(() =>
+      parseEnv({
+        NODE_ENV: "production",
+        PORT: "4000",
+        DATABASE_URL: "postgresql://user:pass@localhost:5432/db",
+        CORS_ORIGINS: "http://localhost:5173",
+        AUTH_DEV_BYPASS: "true",
+      } as NodeJS.ProcessEnv),
+    ).toThrow(/AUTH_DEV_BYPASS.*production/i);
   });
 });
