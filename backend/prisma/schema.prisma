@@ -320,6 +320,7 @@ model Order {
   amountPaid      Int            @default(0)
   cancelledBy     CancelledBy?
   cancelReason    String?
+  lastReminderAt   DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
