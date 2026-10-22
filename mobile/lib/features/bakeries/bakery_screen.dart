@@ -333,7 +333,12 @@ class _ProductTile extends StatelessWidget {
                         color: AppColors.muted,
                         size: 32,
                       )
-                    : Image.network(product.imageUrl!, fit: BoxFit.cover),
+                    : Image.network(
+                        product.imageUrl!,
+                        fit: BoxFit.cover,
+                        semanticLabel: product.name,
+                        errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.cake_outlined, color: AppColors.muted)),
+                      ),
               ),
             ),
           ),

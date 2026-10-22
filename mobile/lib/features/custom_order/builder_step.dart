@@ -155,6 +155,9 @@ class _BuilderStepState extends State<BuilderStep> {
   }
 
   Widget _group(OptionGroup group) {
+    final selected = group.options.where((o) => _isPicked(group, o)).toList();
+    final requirement = group.required ? 'Required' : 'Optional';
+    final selectionSummary = selected.isEmpty ? requirement : '${selected.length} selected · $requirement';
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -167,7 +170,10 @@ class _BuilderStepState extends State<BuilderStep> {
                   TextSpan(
                     text: group.name,
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    children: [if (group.multiple) const TextSpan(text: ' · pick any', style: TextStyle(fontWeight: FontWeight.w400, color: AppColors.muted))],
+                    children: [
+                      if (group.multiple) const TextSpan(text: ' · pick any', style: TextStyle(fontWeight: FontWeight.w400, color: AppColors.muted)),
+                      TextSpan(text: '  $selectionSummary', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: AppColors.muted)),
+                    ],
                   ),
                 ),
               ),

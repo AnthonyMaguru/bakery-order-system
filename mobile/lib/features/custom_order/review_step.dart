@@ -88,6 +88,10 @@ class _ReviewStepState extends State<ReviewStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text('Your request to ${d.bakery.name}', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 4),
+                const Text('The bakery will review this and send you a quote. Nothing is charged now.', style: TextStyle(color: AppColors.ink2)),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     if (d.useBuilder && d.groups.isNotEmpty)

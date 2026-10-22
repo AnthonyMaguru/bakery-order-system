@@ -108,7 +108,7 @@ class _PersonalStepState extends State<PersonalStep> {
                     top: 2,
                     right: 2,
                     child: IconButton(
-                      style: IconButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size(32, 32), padding: EdgeInsets.zero),
+                      style: IconButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size(44, 44), padding: EdgeInsets.zero),
                       icon: const Icon(Icons.close, size: 18),
                       tooltip: 'Remove photo',
                       onPressed: () => setState(() => d.photos = [...d.photos]..removeAt(i)),
