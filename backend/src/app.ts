@@ -16,6 +16,7 @@ import { bakeryApplicationsRouter } from "./modules/bakery-applications/bakery-a
 
 export function createApp() {
   const app = express();
+  app.set("trust proxy", 1);
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 300,

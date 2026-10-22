@@ -83,7 +83,15 @@ class _DateSheetState extends State<_DateSheet> {
                   children: [
                     Text(offline ? 'Connect to the internet to see which days the bakery has free.' : snapshot.error.toString(), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    OutlinedButton(onPressed: () => setState(() => _days = _load()), child: const Text('Try again')),
+                    OutlinedButton(
+                      onPressed: () {
+                        final next = _load();
+                        setState(() {
+                          _days = next;
+                        });
+                      },
+                      child: const Text('Try again'),
+                    ),
                   ],
                 ),
               );

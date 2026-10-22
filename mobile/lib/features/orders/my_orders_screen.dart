@@ -41,7 +41,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     await Outbox.instance.flush();
     final next = _load();
     if (!mounted) return;
-    setState(() => _orders = next);
+    setState(() {
+      _orders = next;
+    });
     await next.catchError((_) => <Order>[]);
   }
 
@@ -106,9 +108,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     if (snapshot.hasError)
                       Padding(
                         padding: const EdgeInsets.all(20),
-                        child: Text(
-                          snapshot.error is NetworkException ? "You're offline. Pull down to try again." : snapshot.error.toString(),
-                          style: const TextStyle(color: AppColors.muted),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              snapshot.error is NetworkException ? "You're offline. Pull down to try again." : snapshot.error.toString(),
+                              style: const TextStyle(color: AppColors.muted),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(onPressed: _refresh, child: const Text('Try again')),
+                          ],
                         ),
                       )
                     else if (!snapshot.hasData)

@@ -48,11 +48,22 @@ async function identify<P>(req: Request<P>): Promise<Identity> {
 
 async function loadUser({ uid, email, name, dev }: Identity): Promise<User> {
   const role = dev?.role === "ADMIN" ? "ADMIN" : "CUSTOMER";
-  const user = await prisma.user.upsert({
-    where: { firebaseUid: uid },
-    update: dev ? { role } : {},
-    create: { firebaseUid: uid, email, name, role },
-  });
+  let user: User;
+  try {
+    user = await prisma.user.upsert({
+      where: { firebaseUid: uid },
+      update: dev ? { role } : {},
+      create: { firebaseUid: uid, email, name, role },
+    });
+  } catch (error) {
+    // Handle race condition if concurrent requests race to create the same user
+    const existing = await prisma.user.findUnique({ where: { firebaseUid: uid } });
+    if (existing) {
+      user = existing;
+    } else {
+      throw error;
+    }
+  }
   // Dev staff are made owners of the bakery they name, so every dashboard screen works locally.
   if (dev?.role === "STAFF") {
     const bakery = await prisma.bakery.findUnique({ where: { slug: dev.bakerySlug }, select: { id: true } });

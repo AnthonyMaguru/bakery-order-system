@@ -25,7 +25,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     await api.get('/orders/${widget.orderId}') as Map<String, dynamic>,
   );
 
-  void _reload() => setState(() => _order = _load());
+  void _reload() {
+    final next = _load();
+    setState(() {
+      _order = next;
+    });
+  }
 
   @override
   void dispose() {

@@ -88,7 +88,17 @@ class _BuilderStepState extends State<BuilderStep> {
       body: FutureBuilder(
         future: _loading,
         builder: (context, snapshot) {
-          if (snapshot.hasError) return ErrorView(message: snapshot.error.toString(), onRetry: () => setState(() => _loading = _load()));
+          if (snapshot.hasError) {
+            return ErrorView(
+              message: snapshot.error.toString(),
+              onRetry: () {
+                final next = _load();
+                setState(() {
+                  _loading = next;
+                });
+              },
+            );
+          }
           if (d.groups.isEmpty) {
             return snapshot.connectionState == ConnectionState.done
                 ? const Center(child: Padding(padding: EdgeInsets.all(28), child: Text('This bakery has no builder options yet. Go back and describe your cake instead.')))
