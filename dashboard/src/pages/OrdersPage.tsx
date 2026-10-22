@@ -143,7 +143,7 @@ function OrdersTable({ orders }: { orders: OrderSummary[] }) {
                 </td>
                 <td>
                   <StatusBadge status={o.status} />
-                  {waitingFor(o) && <div className="sub" style={{ paddingTop: 4 }}>{waitingFor(o)}</div>}
+                  <div className="sub order-next-action">{waitingFor(o) ?? (o.status === 'SUBMITTED' ? 'Review and quote' : o.status === 'READY' ? 'Arrange collection' : 'No action needed')}</div>
                 </td>
                 <td>
                   <PaymentBadge status={o.paymentStatus} />

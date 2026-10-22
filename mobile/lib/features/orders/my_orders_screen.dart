@@ -60,6 +60,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 final open = orders.where((o) => o.status != 'COMPLETED' && o.status != 'CANCELLED').toList();
                 final past = orders.where((o) => !open.contains(o)).toList();
                 final outbox = Outbox.instance.items;
+                final needsAttention = [
+                  ...open.where((o) => o.status == 'QUOTED' || (o.status == 'CONFIRMED' && o.paymentStatus != 'PAID') || o.status == 'READY'),
+                  ...outbox,
+                ];
                 return ListView(
                   padding: const EdgeInsets.only(bottom: 24),
                   children: [
@@ -80,6 +84,24 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         onSelectionChanged: (s) => setState(() => _past = s.first),
                       ),
                     ),
+                    if (!_past && needsAttention.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(color: AppColors.accentSoft, borderRadius: BorderRadius.circular(16)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.notifications_active_outlined, color: AppColors.accent),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                needsAttention.length == 1 ? 'One order needs your attention.' : '${needsAttention.length} orders need your attention.',
+                                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.accent),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (!_past) for (final item in outbox) _OutboxRow(item: item),
                     if (snapshot.hasError)
                       Padding(

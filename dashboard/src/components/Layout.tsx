@@ -62,7 +62,7 @@ export function Layout() {
           <strong>{me.name ?? me.email ?? 'Signed in'}</strong>
           <span>{isOwner ? 'Owner' : 'Staff'}</span>
           {firebaseEnabled && (
-            <button type="button" className="btn btn-sm" style={{ color: '#e6d8ce', padding: 0, justifyContent: 'flex-start' }} onClick={() => void signOut(firebaseAuth())}>
+            <button type="button" className="btn btn-sm sidebar-sign-out" onClick={() => void signOut(firebaseAuth())}>
               Sign out
             </button>
           )}
