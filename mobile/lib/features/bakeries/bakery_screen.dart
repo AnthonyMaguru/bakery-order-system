@@ -337,7 +337,7 @@ class _ProductTile extends StatelessWidget {
                         product.imageUrl!,
                         fit: BoxFit.cover,
                         semanticLabel: product.name,
-                        errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.cake_outlined, color: AppColors.muted)),
+                        errorBuilder: (_, _, _) => const Center(child: Icon(Icons.cake_outlined, color: AppColors.muted)),
                       ),
               ),
             ),
