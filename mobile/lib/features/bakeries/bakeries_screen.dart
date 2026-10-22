@@ -95,7 +95,9 @@ class _BakeriesScreenState extends State<BakeriesScreen> {
           body: SafeArea(
             child: RefreshIndicator(
               onRefresh: () async {
-                _setData(_load());
+                final next = _load();
+                _setData(next);
+                await next;
               },
               child: ListView(
                 padding: EdgeInsets.zero,

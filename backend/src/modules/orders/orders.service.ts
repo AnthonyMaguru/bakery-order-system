@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { isMember } from "../../lib/access.js";
 import { addDays, dateFromKey } from "../../lib/dates.js";
 import { badRequest, conflict, forbidden, notFound } from "../../lib/http-error.js";
@@ -39,6 +41,23 @@ const orderSummary = {
 } as const;
 
 const isUniqueClash = (err: unknown) => err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+
+function stableValue(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, stableValue(entry)]),
+    );
+  }
+  return value;
+}
+
+function requestFingerprint(input: CreateOrderInput) {
+  return createHash("sha256").update(JSON.stringify(stableValue(input))).digest("hex");
+}
 
 // ---------------------------------------------------------------------------
 // Reading
@@ -126,10 +145,16 @@ function findRetry(user: User, clientRequestId: string) {
 }
 
 export async function createOrder(user: User, input: CreateOrderInput) {
+  const fingerprint = requestFingerprint(input);
   // The app resends an order that was queued while offline; return the one already saved.
   if (input.clientRequestId) {
     const existing = await findRetry(user, input.clientRequestId);
-    if (existing) return { order: existing, created: false };
+    if (existing) {
+      if (existing.requestFingerprint && existing.requestFingerprint !== fingerprint) {
+        throw conflict("This request id was already used for a different order");
+      }
+      return { order: existing, created: false };
+    }
   }
 
   const bakery = await findActiveBakery(input.bakeryId);
@@ -177,6 +202,7 @@ export async function createOrder(user: User, input: CreateOrderInput) {
       return tx.order.create({
         data: {
           ...fields,
+          requestFingerprint: input.clientRequestId ? fingerprint : null,
           deliveryAddress: input.fulfilment === "DELIVERY" ? input.deliveryAddress : null,
           bakeryId: bakery.id,
           customerId: user.id,

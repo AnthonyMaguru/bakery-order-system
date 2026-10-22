@@ -27,6 +27,19 @@ export function parseEnv(input: NodeJS.ProcessEnv = process.env) {
     throw new Error("AUTH_DEV_BYPASS cannot be enabled when NODE_ENV=production.");
   }
 
+  if (parsed.NODE_ENV === "production") {
+    const origins = parsed.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
+    if (origins.length === 0 || origins.includes("*")) {
+      throw new Error("CORS_ORIGINS must contain explicit origins in production.");
+    }
+    if (origins.some((origin) => new URL(origin).protocol !== "https:")) {
+      throw new Error("CORS_ORIGINS must use HTTPS in production.");
+    }
+    if (!parsed.PUBLIC_API_URL || new URL(parsed.PUBLIC_API_URL).protocol !== "https:") {
+      throw new Error("PUBLIC_API_URL must be an HTTPS URL in production.");
+    }
+  }
+
   return parsed;
 }
 

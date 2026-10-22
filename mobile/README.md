@@ -65,6 +65,28 @@ test/
 
 Rules that decide things are plain Dart so they're easy to test: `builder_rules.dart` matches the backend's rules for builder choices and estimates.
 
+## Release builds
+
+Debug builds use the local Android debug key. Release builds intentionally fail unless a production signing key is configured.
+
+1. Create and store the upload keystore in a private secrets location, not in the repository:
+
+	```bash
+	mkdir -p android/release-keystore
+	keytool -genkeypair -v -keystore android/release-keystore/upload-keystore.jks \
+	  -keyalg RSA -keysize 2048 -validity 10000 -alias bakery-orders
+	```
+
+2. Copy `android/key.properties.example` to `android/key.properties` and replace every `CHANGE_ME` value. Keep both files private; `.gitignore` excludes them.
+
+3. Build with the release Firebase configuration:
+
+	```bash
+	flutter build apk --release --dart-define-from-file=firebase.json
+	```
+
+For CI, store the keystore and passwords in the CI secret store, create these files during the build, and delete them after the artifact is produced. Never commit `key.properties`, `.jks` files, or production Firebase configuration.
+
 ## Next steps
 
 - Firebase Auth sign in, then send the ID token from `core/api_client.dart`

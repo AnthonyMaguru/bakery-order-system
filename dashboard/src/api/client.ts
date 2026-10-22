@@ -1,6 +1,11 @@
+import { signOut } from 'firebase/auth'
 import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
+const configuredBaseUrl = import.meta.env.VITE_API_URL as string | undefined
+if (import.meta.env.PROD && (!configuredBaseUrl || new URL(configuredBaseUrl).protocol !== 'https:')) {
+  throw new Error('VITE_API_URL must be an HTTPS URL in production.')
+}
+const BASE_URL = configuredBaseUrl ?? 'http://localhost:4000/api'
 
 export class ApiError extends Error {
   status: number
@@ -17,6 +22,7 @@ async function authHeaders(): Promise<Record<string, string>> {
     const token = await firebaseAuth().currentUser?.getIdToken()
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
+  if (import.meta.env.PROD) throw new Error('Firebase authentication is required in production.')
   // Test login while there is no Firebase project; needs AUTH_DEV_BYPASS=true on the backend.
   const devUser = import.meta.env.VITE_DEV_USER
   if (devUser) return { 'x-dev-user': devUser, 'x-dev-role': 'STAFF' }
@@ -39,7 +45,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(0, "Couldn't reach the server. Check the connection and try again.")
   }
   const body = res.status === 204 ? null : await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(res.status, body?.error ?? res.statusText)
+  if (!res.ok) {
+    if (res.status === 401 && firebaseEnabled) void signOut(firebaseAuth())
+    throw new ApiError(res.status, body?.error ?? res.statusText)
+  }
   return body as T
 }
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireRole } from "../../lib/access.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { BakeryApplicationInput, BakeryApplicationStatusUpdate } from "./bakery-applications.schemas.js";
 import * as applications from "./bakery-applications.service.js";
@@ -10,27 +11,15 @@ bakeryApplicationsRouter.post("/", async (req, res) => {
   res.status(201).json(application);
 });
 
-bakeryApplicationsRouter.get("/", requireAuth, async (req, res) => {
-  if (req.user!.role !== "ADMIN") {
-    res.status(403).json({ error: "Platform admin access required" });
-    return;
-  }
+bakeryApplicationsRouter.get("/", requireAuth, requireRole("ADMIN"), async (_req, res) => {
   res.json(await applications.listApplications());
 });
 
-bakeryApplicationsRouter.patch("/:applicationId", requireAuth, async (req, res) => {
-  if (req.user!.role !== "ADMIN") {
-    res.status(403).json({ error: "Platform admin access required" });
-    return;
-  }
+bakeryApplicationsRouter.patch("/:applicationId", requireAuth, requireRole("ADMIN"), async (req, res) => {
   const { status } = BakeryApplicationStatusUpdate.parse(req.body);
-  res.json(await applications.updateApplicationStatus(req.params.applicationId, status));
+  res.json(await applications.updateApplicationStatus(String(req.params.applicationId), status));
 });
 
-bakeryApplicationsRouter.post("/:applicationId/onboard", requireAuth, async (req, res) => {
-  if (req.user!.role !== "ADMIN") {
-    res.status(403).json({ error: "Platform admin access required" });
-    return;
-  }
-  res.status(201).json(await applications.onboardApplication(req.params.applicationId));
+bakeryApplicationsRouter.post("/:applicationId/onboard", requireAuth, requireRole("ADMIN"), async (req, res) => {
+  res.status(201).json(await applications.onboardApplication(String(req.params.applicationId)));
 });

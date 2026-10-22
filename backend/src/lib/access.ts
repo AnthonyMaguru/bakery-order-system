@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { forbidden, notFound } from "./http-error.js";
-import { prisma, type MemberRole, type User } from "./prisma.js";
+import { prisma, type MemberRole, type Role, type User } from "./prisma.js";
 
 // Platform admins can act as staff of any bakery.
 export async function isMember(user: User | undefined, bakeryId: string, roles?: MemberRole[]) {
@@ -15,6 +15,13 @@ export async function isMember(user: User | undefined, bakeryId: string, roles?:
 
 export async function assertMember(user: User | undefined, bakeryId: string, roles?: MemberRole[]) {
   if (!(await isMember(user, bakeryId, roles))) throw forbidden();
+}
+
+export function requireRole(...roles: Role[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) throw forbidden();
+    next();
+  };
 }
 
 // Route guard for /bakeries/:bakeryId/... staff endpoints. Use after requireAuth.

@@ -5,11 +5,15 @@ import 'core/firebase_setup.dart';
 import 'core/theme.dart';
 import 'features/auth/push.dart';
 import 'features/auth/sign_in_screen.dart';
+import 'features/auth/account_screen.dart';
 import 'features/bakeries/bakeries_screen.dart';
 import 'features/orders/my_orders_screen.dart';
 import 'features/outbox/outbox.dart';
 
-bool shouldPromptSignIn({required bool firebaseReady, required bool signedIn}) => firebaseReady && !signedIn;
+bool shouldPromptSignIn({
+  required bool firebaseReady,
+  required bool signedIn,
+}) => firebaseReady && !signedIn;
 
 class BakeryApp extends StatelessWidget {
   const BakeryApp({super.key});
@@ -22,7 +26,9 @@ class BakeryApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: messengerKey,
       home: StreamBuilder<User?>(
-        stream: firebaseReady ? FirebaseAuth.instance.authStateChanges() : Stream<User?>.value(null),
+        stream: firebaseReady
+            ? FirebaseAuth.instance.authStateChanges()
+            : Stream<User?>.value(null),
         builder: (context, snapshot) {
           final signedIn = snapshot.data != null;
           if (firebaseReady && !signedIn) {
@@ -69,7 +75,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _index, children: const [BakeriesScreen(), MyOrdersScreen()]),
+      body: IndexedStack(
+        index: _index,
+        children: const [BakeriesScreen(), MyOrdersScreen(), AccountScreen()],
+      ),
       bottomNavigationBar: ListenableBuilder(
         listenable: Outbox.instance,
         builder: (context, _) {
@@ -78,11 +87,24 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
             destinations: [
-              const NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Bakeries'),
+              const NavigationDestination(
+                icon: Icon(Icons.storefront_outlined),
+                selectedIcon: Icon(Icons.storefront),
+                label: 'Bakeries',
+              ),
               NavigationDestination(
-                icon: Badge(isLabelVisible: waiting > 0, label: Text('$waiting'), child: const Icon(Icons.receipt_long_outlined)),
+                icon: Badge(
+                  isLabelVisible: waiting > 0,
+                  label: Text('$waiting'),
+                  child: const Icon(Icons.receipt_long_outlined),
+                ),
                 selectedIcon: const Icon(Icons.receipt_long),
                 label: 'My orders',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Account',
               ),
             ],
           );

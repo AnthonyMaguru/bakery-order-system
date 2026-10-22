@@ -291,6 +291,8 @@ model Order {
   number          Int            @unique @default(autoincrement())
   // Sent by the app so a retried submission after a dropped connection is not saved twice.
   clientRequestId String?
+  // Hash of the validated request body, preventing a reused id from binding a different order.
+  requestFingerprint String?
   bakeryId        String
   customerId      String
   type            OrderType
