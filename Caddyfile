@@ -1,0 +1,11 @@
+{$DOMAIN} {
+    # Route API traffic to the Express backend
+    handle /api/* {
+        reverse_proxy backend:4000
+    }
+
+    # Route all other traffic to the dashboard SPA
+    handle {
+        reverse_proxy dashboard:80
+    }
+}

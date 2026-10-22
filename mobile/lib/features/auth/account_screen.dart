@@ -70,7 +70,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Future<void> _reload() async {
     final next = _load();
-    setState(() => _profile = next);
+    setState(() {
+      _profile = next;
+    });
     await next;
   }
 
