@@ -40,6 +40,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Future<void> _refresh() async {
     await Outbox.instance.flush();
     final next = _load();
+    if (!mounted) return;
     setState(() => _orders = next);
     await next.catchError((_) => <Order>[]);
   }

@@ -4,7 +4,13 @@ import 'theme.dart';
 
 /// "Step 2 of 5" with a progress bar, above the step's title.
 class StepHeader extends StatelessWidget {
-  const StepHeader({super.key, required this.step, required this.title, this.total = 5, this.subtitle});
+  const StepHeader({
+    super.key,
+    required this.step,
+    required this.title,
+    this.total = 5,
+    this.subtitle,
+  });
 
   final int step;
   final int total;
@@ -18,7 +24,14 @@ class StepHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Step $step of $total', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.muted)),
+          Text(
+            'Step $step of $total',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
+            ),
+          ),
           const SizedBox(height: 6),
           Semantics(
             label: 'Step $step of $total',
@@ -29,7 +42,12 @@ class StepHeader extends StatelessWidget {
                     child: Container(
                       height: 5,
                       margin: EdgeInsets.only(right: i == total ? 0 : 4),
-                      decoration: BoxDecoration(color: i <= step ? AppColors.accent : const Color(0xFFE8DCD2), borderRadius: BorderRadius.circular(3)),
+                      decoration: BoxDecoration(
+                        color: i <= step
+                            ? AppColors.accent
+                            : const Color(0xFFE8DCD2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
               ],
@@ -39,7 +57,10 @@ class StepHeader extends StatelessWidget {
           Text(title, style: Theme.of(context).textTheme.headlineMedium),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
-            Text(subtitle!, style: const TextStyle(fontSize: 15, color: AppColors.muted)),
+            Text(
+              subtitle!,
+              style: const TextStyle(fontSize: 15, color: AppColors.muted),
+            ),
           ],
         ],
       ),
@@ -57,7 +78,10 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.line))),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.line)),
+      ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: SafeArea(
         top: false,
@@ -67,7 +91,11 @@ class BottomBar extends StatelessWidget {
             child,
             if (note != null) ...[
               const SizedBox(height: 8),
-              Text(note!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                note!,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ],
         ),
@@ -84,16 +112,25 @@ class OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: AppColors.ink,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: const Row(
-        children: [
-          Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
-          SizedBox(width: 10),
-          Expanded(child: Text("You're offline. Showing what was saved last time.", style: TextStyle(color: Colors.white, fontSize: 14))),
-        ],
+    return Semantics(
+      liveRegion: true,
+      label: "You're offline. Showing data saved on your phone.",
+      child: Container(
+        width: double.infinity,
+        color: AppColors.ink,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: const Row(
+          children: [
+            Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "You're offline. Showing what was saved last time.",
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -114,7 +151,11 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
@@ -126,7 +167,12 @@ class ErrorView extends StatelessWidget {
 
 /// A small coloured label, e.g. an order status.
 class Pill extends StatelessWidget {
-  const Pill(this.label, {super.key, this.background = AppColors.sand, this.foreground = AppColors.ink2});
+  const Pill(
+    this.label, {
+    super.key,
+    this.background = AppColors.sand,
+    this.foreground = AppColors.ink2,
+  });
 
   final String label;
   final Color background;
@@ -134,10 +180,23 @@ class Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: foreground)),
+    return Semantics(
+      label: 'Status: $label',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: foreground,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -166,9 +225,20 @@ class FieldLabel extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           text: text,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
           children: [
-            if (optional) const TextSpan(text: ' · optional', style: TextStyle(fontWeight: FontWeight.w400, color: AppColors.muted)),
+            if (optional)
+              const TextSpan(
+                text: ' · optional',
+                style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.muted,
+                ),
+              ),
           ],
         ),
       ),
@@ -177,5 +247,7 @@ class FieldLabel extends StatelessWidget {
 }
 
 void showError(BuildContext context, Object error) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(error.toString())));
 }

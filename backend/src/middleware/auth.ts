@@ -39,7 +39,7 @@ async function identify<P>(req: Request<P>): Promise<Identity> {
 
   const auth = firebaseAuth();
   try {
-    const decoded = await auth.verifyIdToken(token);
+    const decoded = await auth.verifyIdToken(token, isProduction);
     return { uid: decoded.uid, email: decoded.email, name: decoded.name };
   } catch {
     throw new HttpError(401, "Invalid or expired token");

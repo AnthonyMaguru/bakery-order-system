@@ -131,6 +131,9 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
       const retry = await api.post("/api/orders").set(customer).send(body);
       expect(retry.status).toBe(200);
       expect(retry.body.id).toBe(orderId);
+
+      const changedRetry = await api.post("/api/orders").set(customer).send({ ...body, deliveryAddress: "A different address" });
+      expect(changedRetry.status).toBe(409);
     });
 
     it("rejects areas the bakery doesn't deliver to", async () => {

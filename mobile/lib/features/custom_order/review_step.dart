@@ -43,9 +43,9 @@ class _ReviewStepState extends State<ReviewStep> {
       if (!mounted) return;
       await submitOrder(context, body: d.toJson(), title: d.title, bakeryName: d.bakery.name, custom: true);
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } on NetworkException catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }

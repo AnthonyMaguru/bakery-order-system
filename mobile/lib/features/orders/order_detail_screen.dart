@@ -21,7 +21,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final _messageFocus = FocusNode();
   bool _sending = false;
 
-  Future<Order> _load() async => Order.fromJson(await api.get('/orders/${widget.orderId}') as Map<String, dynamic>);
+  Future<Order> _load() async => Order.fromJson(
+    await api.get('/orders/${widget.orderId}') as Map<String, dynamic>,
+  );
 
   void _reload() => setState(() => _order = _load());
 
@@ -55,9 +57,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         children: [
           _Detail('Cake', order.title),
           _Detail('When', dateTimeLabel(order.dueDate)),
-          _Detail('Where', order.fulfilment == 'PICKUP' ? 'Pickup' : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}'),
+          _Detail(
+            'Where',
+            order.fulfilment == 'PICKUP'
+                ? 'Pickup'
+                : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}',
+          ),
           const Divider(height: 28),
-          const Text('What happens next', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text(
+            'What happens next',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 6),
           Text(
             '${order.bakeryName} books your day and tells you how much deposit to pay'
@@ -65,16 +75,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             style: const TextStyle(color: AppColors.ink2),
           ),
           const SizedBox(height: 20),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Yes, accept the quote')),
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Not yet')),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes, accept the quote'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not yet'),
+          ),
         ],
       ),
     );
     if (yes != true) return;
     try {
-      await api.post('/orders/${order.id}/accept-quote', {'quotationId': quote.id});
+      await api.post('/orders/${order.id}/accept-quote', {
+        'quotationId': quote.id,
+      });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quote accepted. ${order.bakeryName} has been told.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Quote accepted. ${order.bakeryName} has been told.'),
+        ),
+      );
       _reload();
     } catch (e) {
       if (!mounted) return;
@@ -84,7 +106,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _cancel(Order order) async {
-    const reasons = ['Plans changed', 'The price is too high', 'I ordered somewhere else', 'Something else'];
+    const reasons = [
+      'Plans changed',
+      'The price is too high',
+      'I ordered somewhere else',
+      'Something else',
+    ];
     var reason = reasons.first;
     final yes = await showModalBottomSheet<bool>(
       context: context,
@@ -93,19 +120,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         builder: (context, setSheet) => _Sheet(
           title: 'Cancel your ${order.title.toLowerCase()}?',
           children: [
-            Text("${order.bakeryName} is told straight away. You can't undo this. If you've paid a deposit, talk to the bakery about getting it back.",
-                style: const TextStyle(color: AppColors.ink2)),
+            Text(
+              "${order.bakeryName} is told straight away. You can't undo this. If you've paid a deposit, talk to the bakery about getting it back.",
+              style: const TextStyle(color: AppColors.ink2),
+            ),
             const SizedBox(height: 16),
-            const Text('Tell the bakery why', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Tell the bakery why',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [for (final r in reasons) ChoiceChip(label: Text(r), selected: r == reason, onSelected: (_) => setSheet(() => reason = r))],
+              children: [
+                for (final r in reasons)
+                  ChoiceChip(
+                    label: Text(r),
+                    selected: r == reason,
+                    onSelected: (_) => setSheet(() => reason = r),
+                  ),
+              ],
             ),
             if (reason == 'The price is too high') ...[
               const SizedBox(height: 12),
-              const Text('You could also message the bakery and ask for a cheaper option.', style: TextStyle(color: AppColors.ink2)),
+              const Text(
+                'You could also message the bakery and ask for a cheaper option.',
+                style: TextStyle(color: AppColors.ink2),
+              ),
             ],
             const SizedBox(height: 20),
             FilledButton(
@@ -115,7 +157,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger, side: const BorderSide(color: AppColors.danger, width: 1.5)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger, width: 1.5),
+              ),
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Cancel order'),
             ),
@@ -139,9 +184,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       body: FutureBuilder(
         future: _order,
         builder: (context, snapshot) {
-          if (snapshot.hasError) return ErrorView(message: snapshot.error.toString(), onRetry: _reload);
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          return RefreshIndicator(onRefresh: () async => _reload(), child: _body(snapshot.data!));
+          if (snapshot.hasError) {
+            return ErrorView(
+              message: snapshot.error.toString(),
+              onRetry: _reload,
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return RefreshIndicator(
+            onRefresh: () async => _reload(),
+            child: _body(snapshot.data!),
+          );
         },
       ),
     );
@@ -150,36 +205,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _body(Order order) {
     final (bg, fg) = statusColours[order.status]!;
     final quote = order.latestQuote;
-    final accepted = order.quotations.where((q) => q.acceptedAt != null).firstOrNull;
+    final accepted = order.quotations
+        .where((q) => q.acceptedAt != null)
+        .firstOrNull;
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Text(order.title, style: Theme.of(context).textTheme.headlineMedium)),
-                  Pill(statusLabels[order.status]!, background: bg, foreground: fg),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${order.bakeryName} · ${dateTimeLabel(order.dueDate)} · ${order.fulfilment == 'PICKUP' ? 'Pickup' : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}'}',
-                style: const TextStyle(fontSize: 15, color: AppColors.ink2),
-              ),
-              Text('Order ${orderRef(order.number)}', style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
+        _OrderHero(order: order, background: bg, foreground: fg),
         if (order.status == 'CANCELLED')
           _Band(
             colour: AppColors.dangerSoft,
             child: Text(
               'Cancelled by ${order.cancelledBy == 'CUSTOMER' ? 'you' : order.bakeryName}${order.cancelReason == null ? '' : ': ${order.cancelReason}'}',
-              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         if (order.status == 'QUOTED' && quote != null)
@@ -188,22 +229,57 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Your quote', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.accent)),
+                const Text(
+                  'Your quote',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(money(quote.amount, order.currency), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700)),
-                if (quote.note != null) ...[const SizedBox(height: 6), Text(quote.note!, style: const TextStyle(color: AppColors.ink2))],
+                Text(
+                  money(quote.amount, order.currency),
+                  style: const TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (quote.note != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    quote.note!,
+                    style: const TextStyle(color: AppColors.ink2),
+                  ),
+                ],
                 const SizedBox(height: 4),
-                Text('Sent by ${order.bakeryName} on ${dayLabel(quote.createdAt)}', style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  'Sent by ${order.bakeryName} on ${dayLabel(quote.createdAt)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    Expanded(child: FilledButton(onPressed: () => _acceptQuote(order, quote), child: const Text('Accept quote'))),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => _acceptQuote(order, quote),
+                        child: const Text('Accept quote'),
+                      ),
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: OutlinedButton(onPressed: () => _messageFocus.requestFocus(), child: const Text('Ask for changes'))),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _messageFocus.requestFocus(),
+                        child: const Text('Ask for changes'),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text("Accepting doesn't charge you. You pay the bakery directly.", style: TextStyle(fontSize: 13, color: AppColors.ink2)),
+                const Text(
+                  "Accepting doesn't charge you. You pay the bakery directly.",
+                  style: TextStyle(fontSize: 13, color: AppColors.ink2),
+                ),
               ],
             ),
           ),
@@ -213,9 +289,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: Column(
             children: [
               for (final s in order.selections) _Detail(s.key, s.value),
-              if (order.selections.isEmpty && order.itemNames.isNotEmpty) _Detail('Cake', order.itemNames.join(', ')),
+              if (order.selections.isEmpty && order.itemNames.isNotEmpty)
+                _Detail('Cake', order.itemNames.join(', ')),
               if (order.flavour != null) _Detail('Flavour', order.flavour!),
-              if (order.inscription != null) _Detail('Writing', order.inscription!),
+              if (order.inscription != null)
+                _Detail('Writing', order.inscription!),
               if (order.theme != null) _Detail('Theme', order.theme!),
               if (order.notes != null) _Detail('Notes', order.notes!),
             ],
@@ -227,7 +305,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (order.total != null) _Detail('Total', money(order.total!, order.currency)),
+                if (order.total != null)
+                  _Detail('Total', money(order.total!, order.currency)),
                 _Detail('Paid', money(order.amountPaid, order.currency)),
                 const SizedBox(height: 6),
                 Text(
@@ -244,8 +323,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (order.comments.isEmpty) const Text('No messages yet. Ask the bakery anything about your cake.', style: TextStyle(color: AppColors.muted)),
-              for (final c in order.comments) _Bubble(comment: c, bakeryName: order.bakeryName),
+              if (order.comments.isEmpty)
+                const Text(
+                  'No messages yet. Ask the bakery anything about your cake.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              for (final c in order.comments)
+                _Bubble(comment: c, bakeryName: order.bakeryName),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -254,30 +338,114 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       controller: _message,
                       focusNode: _messageFocus,
                       textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(hintText: 'Message the bakery'),
+                      decoration: const InputDecoration(
+                        hintText: 'Message the bakery',
+                      ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filled(onPressed: _sending ? null : _sendMessage, icon: const Icon(Icons.arrow_forward_rounded), tooltip: 'Send message'),
+                  IconButton.filled(
+                    onPressed: _sending ? null : _sendMessage,
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    tooltip: 'Send message',
+                  ),
                 ],
               ),
             ],
           ),
         ),
-        if (order.bakeryPhone != null || customerCancellable.contains(order.status))
+        if (order.bakeryPhone != null ||
+            customerCancellable.contains(order.status))
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (order.bakeryPhone != null) Padding(padding: const EdgeInsets.all(12), child: SelectableText('Call ${order.bakeryName}: ${order.bakeryPhone}')),
+                if (order.bakeryPhone != null)
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SelectableText(
+                      'Call ${order.bakeryName}: ${order.bakeryPhone}',
+                    ),
+                  ),
                 if (customerCancellable.contains(order.status))
-                  TextButton(style: TextButton.styleFrom(foregroundColor: AppColors.danger), onPressed: () => _cancel(order), child: const Text('Cancel this order')),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                    ),
+                    onPressed: () => _cancel(order),
+                    child: const Text('Cancel this order'),
+                  ),
               ],
             ),
           ),
       ],
+    );
+  }
+}
+
+class _OrderHero extends StatelessWidget {
+  const _OrderHero({
+    required this.order,
+    required this.background,
+    required this.foreground,
+  });
+
+  final Order order;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Your order',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+              Pill(
+                statusLabels[order.status]!,
+                background: Colors.white.withValues(alpha: 0.72),
+                foreground: foreground,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(order.title, style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 8),
+          Text(
+            order.bakeryName,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${dateTimeLabel(order.dueDate)} · ${order.fulfilment == 'PICKUP' ? 'Pickup' : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}'}',
+            style: const TextStyle(fontSize: 14, color: AppColors.ink2),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Order ${orderRef(order.number)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -304,7 +472,12 @@ class _Progress extends StatelessWidget {
         children: [
           for (var i = 0; i < steps.length; i++)
             Semantics(
-              label: '${steps[i].$2}${i < current ? ', done' : i == current ? ', now' : ''}',
+              label:
+                  '${steps[i].$2}${i < current
+                      ? ', done'
+                      : i == current
+                      ? ', now'
+                      : ''}',
               child: Row(
                 children: [
                   Container(
@@ -314,13 +487,24 @@ class _Progress extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: i < current ? AppColors.accent : AppColors.surface,
-                      border: Border.all(color: i <= current ? AppColors.accent : const Color(0xFFD9C7BB), width: 2),
+                      border: Border.all(
+                        color: i <= current
+                            ? AppColors.accent
+                            : const Color(0xFFD9C7BB),
+                        width: 2,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
                   Text(
                     steps[i].$2,
-                    style: TextStyle(fontSize: 15, fontWeight: i == current ? FontWeight.w700 : FontWeight.w500, color: i <= current ? AppColors.ink : AppColors.muted),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: i == current
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: i <= current ? AppColors.ink : AppColors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -342,11 +526,16 @@ class _Section extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.line)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -362,7 +551,12 @@ class _Band extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(width: double.infinity, color: colour, padding: const EdgeInsets.all(20), child: child);
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    color: colour,
+    padding: const EdgeInsets.all(20),
+    child: child,
+  );
 }
 
 class _Detail extends StatelessWidget {
@@ -378,7 +572,10 @@ class _Detail extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 104, child: Text(label, style: const TextStyle(color: AppColors.muted))),
+          SizedBox(
+            width: 104,
+            child: Text(label, style: const TextStyle(color: AppColors.muted)),
+          ),
           Expanded(child: Text(value)),
         ],
       ),
@@ -411,11 +608,16 @@ class _Bubble extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: mine
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(comment.body),
             const SizedBox(height: 4),
-            Text('${mine ? 'You' : bakeryName} · ${dayLabel(comment.createdAt)}', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+            Text(
+              '${mine ? 'You' : bakeryName} · ${dayLabel(comment.createdAt)}',
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
           ],
         ),
       ),
@@ -433,12 +635,20 @@ class _Sheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Semantics(header: true, child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+            Semantics(
+              header: true,
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ),
             const SizedBox(height: 14),
             ...children,
           ],
