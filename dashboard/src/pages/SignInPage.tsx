@@ -9,7 +9,7 @@ import {
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { send } from '../api/client'
-import { authMessage, firebaseAuth, firebaseEnabled } from '../lib/firebase'
+import { authMessage, firebaseAuth } from '../lib/firebase'
 import { PublicNav } from '../components/PublicNav'
 
 type Mode = 'sign-in' | 'create' | 'reset'
@@ -61,35 +61,6 @@ export function SignInPage() {
   }
 
   const titles: Record<Mode, string> = { 'sign-in': 'Sign in', create: 'Create your account', reset: 'Reset your password' }
-
-  if (!firebaseEnabled) {
-    return (
-      <main className="auth-page">
-        <PublicNav />
-        <div className="auth-shell auth-shell-simple">
-          <section className="auth-story">
-            <div className="auth-story-copy">
-              <p className="landing-kicker">Local development access</p>
-              <h1>Keep the beautiful work moving.</h1>
-              <p>Firebase sign-in is not configured in this local build. The dashboard is using its development staff identity instead.</p>
-            </div>
-            <div className="auth-story-image" role="img" aria-label="Fresh pastries ready for a bakery counter" />
-          </section>
-          <section className="auth-panel">
-            <div className="auth-form-wrap">
-              <div className="stack">
-                <span className="eyebrow">Development mode</span>
-                <h2>Staff access is ready</h2>
-                <p className="muted">Set the Firebase values in <code>dashboard/.env.local</code> for the real email, password, and Google sign-in form.</p>
-              </div>
-              <Link className="btn btn-primary btn-block" to="/orders">Continue to dashboard</Link>
-            </div>
-            <Link className="auth-home-link" to="/">← Back to Bakery Orders</Link>
-          </section>
-        </div>
-      </main>
-    )
-  }
 
   return (
     <main className="auth-page">
