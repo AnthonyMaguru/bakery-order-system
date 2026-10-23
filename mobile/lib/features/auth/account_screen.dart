@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import 'auth.dart';
+import 'push.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -215,17 +216,72 @@ class _AccountScreenState extends State<AccountScreen> {
                   const SizedBox(height: 16),
                   _Section(
                     title: 'Order updates',
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.notifications_none),
-                      title: const Text('Notifications enabled'),
-                      subtitle: const Text(
-                        'We will notify you about quotes and order status changes.',
-                      ),
-                      trailing: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.ok,
-                      ),
+                    child: FutureBuilder<PushStatus>(
+                      future: Push.instance.status(),
+                      builder: (context, snapshot) {
+                        final status = snapshot.data;
+                        if (status == null) {
+                          return const ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.notifications_none),
+                            title: Text('Checking notifications...'),
+                          );
+                        }
+                        final enabled = status == PushStatus.enabled;
+                        final blocked = status == PushStatus.denied;
+                        final unavailable = status == PushStatus.unavailable;
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            enabled
+                                ? Icons.notifications_active_outlined
+                                : Icons.notifications_none,
+                            color: enabled ? AppColors.ok : AppColors.muted,
+                          ),
+                          title: Text(
+                            enabled
+                                ? 'Notifications enabled'
+                                : blocked
+                                ? 'Notifications are blocked'
+                                : unavailable
+                                ? 'Notifications unavailable'
+                                : 'Get order updates',
+                          ),
+                          subtitle: Text(
+                            enabled
+                                ? 'We will notify you about quotes and order status changes.'
+                                : blocked
+                                ? 'Allow notifications in your device settings to receive order updates.'
+                                : unavailable
+                                ? 'Connect Firebase to enable order updates.'
+                                : 'Know when your bakery replies or updates your order.',
+                          ),
+                          trailing: enabled
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.ok,
+                                )
+                              : blocked
+                              ? const Text(
+                                  'Check device settings',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(color: AppColors.muted),
+                                )
+                              : TextButton(
+                                  onPressed: unavailable
+                                      ? null
+                                      : () async {
+                                          final next = await Push.instance
+                                              .requestPermission();
+                                          if (next == PushStatus.enabled) {
+                                            await Push.instance.register();
+                                          }
+                                          if (mounted) setState(() {});
+                                        },
+                                  child: const Text('Enable'),
+                                ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 24),

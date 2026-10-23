@@ -12,6 +12,8 @@ import '../orders/order_detail_screen.dart';
 final navigatorKey = GlobalKey<NavigatorState>();
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
 
+enum PushStatus { unavailable, notDetermined, enabled, denied }
+
 /// Push notifications: "Your quote is ready", "Your cake is ready to collect".
 /// The backend sends them to every phone registered for the customer.
 class Push {
@@ -21,20 +23,50 @@ class Push {
   StreamSubscription<String>? _refresh;
   bool _listening = false;
 
+  Future<PushStatus> status() async {
+    if (!firebaseReady) return PushStatus.unavailable;
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    return switch (settings.authorizationStatus) {
+      AuthorizationStatus.authorized ||
+      AuthorizationStatus.provisional => PushStatus.enabled,
+      AuthorizationStatus.denied => PushStatus.denied,
+      _ => PushStatus.notDetermined,
+    };
+  }
+
+  Future<PushStatus> requestPermission() async {
+    if (!firebaseReady) return PushStatus.unavailable;
+    final settings = await FirebaseMessaging.instance.requestPermission();
+    return switch (settings.authorizationStatus) {
+      AuthorizationStatus.authorized ||
+      AuthorizationStatus.provisional => PushStatus.enabled,
+      AuthorizationStatus.denied => PushStatus.denied,
+      _ => PushStatus.notDetermined,
+    };
+  }
+
   /// Call after sign in: asks for permission, then registers this phone.
   Future<void> register() async {
     if (!firebaseReady || FirebaseAuth.instance.currentUser == null) return;
     try {
       final settings = await FirebaseMessaging.instance.requestPermission();
-      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        return;
+      }
       // firebase_messaging 17 deprecates tokens in favour of register()/onRegistered, which
       // return installation ids. The backend sends with firebase-admin's multicast send,
       // which takes these tokens, so keep them until both sides move together.
       // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) await api.post('/users/me/fcm-tokens', {'token': token});
+      if (token != null) {
+        await api.post('/users/me/fcm-tokens', {'token': token});
+      }
       // ignore: deprecated_member_use
-      _refresh ??= FirebaseMessaging.instance.onTokenRefresh.listen((t) => api.post('/users/me/fcm-tokens', {'token': t}).catchError((_) => null));
+      _refresh ??= FirebaseMessaging.instance.onTokenRefresh.listen(
+        (t) => api
+            .post('/users/me/fcm-tokens', {'token': t})
+            .catchError((_) => null),
+      );
       _listen();
     } catch (e) {
       // Notifications are a bonus; the app works without them.
@@ -65,13 +97,19 @@ class Push {
 
   SnackBarAction? _orderAction(RemoteMessage message) {
     final orderId = message.data['orderId'] as String?;
-    return orderId == null ? null : SnackBarAction(label: 'View', onPressed: () => _openOrder(message));
+    return orderId == null
+        ? null
+        : SnackBarAction(label: 'View', onPressed: () => _openOrder(message));
   }
 
   void _openOrder(RemoteMessage message) {
     final orderId = message.data['orderId'] as String?;
     if (orderId == null) return;
-    navigatorKey.currentState?.push(MaterialPageRoute<void>(builder: (_) => OrderDetailScreen(orderId: orderId)));
+    navigatorKey.currentState?.push(
+      MaterialPageRoute<void>(
+        builder: (_) => OrderDetailScreen(orderId: orderId),
+      ),
+    );
   }
 
   /// Before signing out: this phone stops getting the account's notifications.
