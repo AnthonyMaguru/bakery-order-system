@@ -7,6 +7,7 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { send } from '../api/client'
 import { authMessage, firebaseAuth } from '../lib/firebase'
 
@@ -61,22 +62,33 @@ export function SignInPage() {
   const titles: Record<Mode, string> = { 'sign-in': 'Sign in', create: 'Create your account', reset: 'Reset your password' }
 
   return (
-    <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--ground)' }}>
-      <div className="stack-lg" style={{ width: 'min(400px, 100%)' }}>
-        <div className="stack">
-          <span className="eyebrow">Bakery Orders · Staff</span>
-          <h1>{titles[mode]}</h1>
-          {mode === 'create' && <p className="muted">After you create it, the bakery owner adds you to their staff from Settings.</p>}
-          {mode === 'reset' && <p className="muted">We'll email you a link to choose a new password.</p>}
+    <main className="auth-shell">
+      <section className="auth-story">
+        <Link className="wordmark" to="/">Bakery Orders<span aria-hidden="true">.</span></Link>
+        <div className="auth-story-copy">
+          <p className="landing-kicker">A clearer day starts here</p>
+          <h1>Keep the beautiful work moving.</h1>
+          <p>One calm workspace for bakery teams to turn good ideas into orders worth making.</p>
         </div>
+        <div className="auth-story-image" role="img" aria-label="Fresh pastries ready for a bakery counter" />
+      </section>
+      <section className="auth-panel">
+        <div className="auth-form-wrap">
+          <div className="stack">
+            <span className="eyebrow">For bakery teams</span>
+            <h2>{titles[mode]}</h2>
+            {mode === 'sign-in' && <p className="muted">Pick up where your bakery left off.</p>}
+            {mode === 'create' && <p className="muted">After you create it, the bakery owner adds you to their staff from Settings.</p>}
+            {mode === 'reset' && <p className="muted">We'll email you a link to choose a new password.</p>}
+          </div>
 
-        {notice && (
-          <p className="alert alert-ok" role="status">
-            {notice}
-          </p>
-        )}
+          {notice && (
+            <p className="alert alert-ok" role="status">
+              {notice}
+            </p>
+          )}
 
-        <form className="stack-lg" onSubmit={submit} noValidate>
+          <form className="stack-lg" onSubmit={submit} noValidate>
           {mode === 'create' && (
             <div className="field">
               <label htmlFor="name">Your name</label>
@@ -114,39 +126,41 @@ export function SignInPage() {
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
             {busy ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : mode === 'create' ? 'Create account' : 'Send reset link'}
           </button>
-        </form>
+          </form>
 
-        {mode !== 'reset' && (
-          <>
-            <div className="row" style={{ gap: 12, color: 'var(--muted)' }}>
-              <span style={{ flex: 1, height: 1, background: 'var(--line-strong)' }} />
-              or
-              <span style={{ flex: 1, height: 1, background: 'var(--line-strong)' }} />
-            </div>
-            <button type="button" className="btn btn-outline btn-block" disabled={busy} onClick={() => run(() => signInWithPopup(firebaseAuth(), new GoogleAuthProvider()))}>
-              Continue with Google
-            </button>
-          </>
-        )}
-
-        <div className="stack" style={{ alignItems: 'flex-start' }}>
-          {mode === 'sign-in' && (
+          {mode !== 'reset' && (
             <>
-              <button type="button" className="btn btn-quiet" onClick={() => setMode('reset')}>
-                Forgot your password?
-              </button>
-              <button type="button" className="btn btn-quiet" onClick={() => setMode('create')}>
-                New to the team? Create an account
+              <div className="row" style={{ gap: 12, color: 'var(--muted)' }}>
+                <span style={{ flex: 1, height: 1, background: 'var(--line-strong)' }} />
+                or
+                <span style={{ flex: 1, height: 1, background: 'var(--line-strong)' }} />
+              </div>
+              <button type="button" className="btn btn-outline btn-block" disabled={busy} onClick={() => run(() => signInWithPopup(firebaseAuth(), new GoogleAuthProvider()))}>
+                Continue with Google
               </button>
             </>
           )}
-          {mode !== 'sign-in' && (
-            <button type="button" className="btn btn-quiet" onClick={() => setMode('sign-in')}>
-              Back to sign in
-            </button>
-          )}
+
+          <div className="stack auth-links">
+            {mode === 'sign-in' && (
+              <>
+                <button type="button" className="btn btn-quiet" onClick={() => setMode('reset')}>
+                  Forgot your password?
+                </button>
+                <button type="button" className="btn btn-quiet" onClick={() => setMode('create')}>
+                  New to the team? Create an account
+                </button>
+              </>
+            )}
+            {mode !== 'sign-in' && (
+              <button type="button" className="btn btn-quiet" onClick={() => setMode('sign-in')}>
+                Back to sign in
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+        <Link className="auth-home-link" to="/">← Back to Bakery Orders</Link>
+      </section>
     </main>
   )
 }
