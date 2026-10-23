@@ -7,7 +7,6 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { send } from '../api/client'
 import { authMessage, firebaseAuth } from '../lib/firebase'
 import { PublicNav } from '../components/PublicNav'
