@@ -9,6 +9,8 @@ import 'features/auth/account_screen.dart';
 import 'features/bakeries/bakeries_screen.dart';
 import 'features/orders/my_orders_screen.dart';
 import 'features/outbox/outbox.dart';
+import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/onboarding_store.dart';
 
 bool shouldPromptSignIn({
   required bool firebaseReady,
@@ -25,18 +27,49 @@ class BakeryApp extends StatelessWidget {
       theme: appTheme,
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: messengerKey,
-      home: StreamBuilder<User?>(
-        stream: firebaseReady
-            ? FirebaseAuth.instance.authStateChanges()
-            : Stream<User?>.value(null),
-        builder: (context, snapshot) {
-          final signedIn = snapshot.data != null;
-          if (firebaseReady && !signedIn) {
-            return const SignInScreen();
-          }
-          return const HomeShell();
-        },
-      ),
+      home: const _StartupGate(),
+    );
+  }
+}
+
+class _StartupGate extends StatefulWidget {
+  const _StartupGate();
+
+  @override
+  State<_StartupGate> createState() => _StartupGateState();
+}
+
+class _StartupGateState extends State<_StartupGate> {
+  late final Future<bool> _onboardingComplete = const OnboardingStore()
+      .isComplete();
+  var _completedDuringSession = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _onboardingComplete,
+      builder: (context, onboarding) {
+        if (!onboarding.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!onboarding.data! && !_completedDuringSession) {
+          return OnboardingScreen(
+            onComplete: () => setState(() => _completedDuringSession = true),
+          );
+        }
+        return StreamBuilder<User?>(
+          stream: firebaseReady
+              ? FirebaseAuth.instance.authStateChanges()
+              : Stream<User?>.value(null),
+          builder: (context, snapshot) {
+            final signedIn = snapshot.data != null;
+            if (firebaseReady && !signedIn) return const SignInScreen();
+            return const HomeShell();
+          },
+        );
+      },
     );
   }
 }
