@@ -7,7 +7,6 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { send } from '../api/client'
 import { authMessage, firebaseAuth } from '../lib/firebase'
 import { PublicNav } from '../components/PublicNav'
@@ -66,18 +65,9 @@ export function SignInPage() {
     <main className="auth-page">
       <PublicNav />
       <div className="auth-shell">
-        <section className="auth-story">
-        <div className="auth-story-copy">
-          <p className="landing-kicker">A clearer day starts here</p>
-          <h1>Keep the beautiful work moving.</h1>
-          <p>One calm workspace for bakery teams to turn good ideas into orders worth making.</p>
-        </div>
-        <div className="auth-story-image" role="img" aria-label="Fresh pastries ready for a bakery counter" />
-        </section>
         <section className="auth-panel">
         <div className="auth-form-wrap">
           <div className="stack">
-            <span className="eyebrow">For bakery teams</span>
             <h2>{titles[mode]}</h2>
             {mode === 'sign-in' && <p className="muted">Pick up where your bakery left off.</p>}
             {mode === 'create' && <p className="muted">After you create it, the bakery owner adds you to their staff from Settings.</p>}
@@ -161,7 +151,6 @@ export function SignInPage() {
             )}
           </div>
         </div>
-        <Link className="auth-home-link" to="/">← Back to Bakery Orders</Link>
         </section>
       </div>
     </main>

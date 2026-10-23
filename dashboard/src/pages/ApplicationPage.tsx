@@ -43,20 +43,11 @@ export function ApplicationPage() {
       </nav>
       <div className="application-layout">
         <div className="application-intro">
-          <p className="eyebrow">Join the table</p>
           <h1>Let’s make room for your bakery.</h1>
           <p>
             Share a little about your bakery and the kind of orders you want to grow.
             We’ll review your application, then contact you before anything goes live.
           </p>
-          <div className="application-aside">
-            <strong>What happens next</strong>
-            <ol>
-              <li>We read your application.</li>
-              <li>We call or email to learn more.</li>
-              <li>We create your bakery space and invite you in.</li>
-            </ol>
-          </div>
         </div>
         <div className="application-form-panel">
           {submitted ? (
@@ -69,8 +60,7 @@ export function ApplicationPage() {
           ) : (
             <form className="form-grid" onSubmit={submit}>
               <div className="form-grid-heading">
-                <h2>Start with the essentials</h2>
-                <p className="muted">It takes about two minutes.</p>
+                <h2>Fill in the essentials</h2>
               </div>
               <label className="field">
                 Bakery name

@@ -7,7 +7,7 @@ export function PublicNav() {
   return (
     <nav className="marketing-nav" aria-label="Main navigation">
       <Link className="wordmark" to="/" onClick={() => setOpen(false)}>
-        Bakery Orders<span aria-hidden="true">.</span>
+        Crumb & Co.<span aria-hidden="true">.</span>
       </Link>
       <button
         type="button"
