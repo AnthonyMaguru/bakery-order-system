@@ -61,8 +61,12 @@ export function Layout() {
     <div className="app">
       <header className="mobile-topbar">
         <strong>Bakery Orders<span aria-hidden="true">.</span></strong>
-        <button type="button" className="menu-button" aria-expanded={menuOpen} aria-controls="dashboard-sidebar" onClick={() => setMenuOpen((open) => !open)}>
-          {menuOpen ? 'Close' : 'Menu'}
+        <button type="button" className="menu-button" aria-label={menuOpen ? 'Close dashboard navigation' : 'Open dashboard navigation'} aria-expanded={menuOpen} aria-controls="dashboard-sidebar" onClick={() => setMenuOpen((open) => !open)}>
+          <span aria-hidden="true" className={`menu-icon${menuOpen ? ' is-open' : ''}`}>
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
       </header>
       <aside id="dashboard-sidebar" className={`sidebar${menuOpen ? ' is-open' : ''}`}>

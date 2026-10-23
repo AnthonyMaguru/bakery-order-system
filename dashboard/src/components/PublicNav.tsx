@@ -12,11 +12,16 @@ export function PublicNav() {
       <button
         type="button"
         className="public-menu-toggle"
+        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         aria-expanded={open}
         aria-controls="public-navigation-links"
         onClick={() => setOpen((current) => !current)}
       >
-        {open ? 'Close' : 'Menu'}
+        <span aria-hidden="true" className={`menu-icon${open ? ' is-open' : ''}`}>
+          <span />
+          <span />
+          <span />
+        </span>
       </button>
       <div id="public-navigation-links" className={`marketing-nav-links${open ? ' is-open' : ''}`}>
         <a href="/#workflow" onClick={() => setOpen(false)}>How it works</a>
