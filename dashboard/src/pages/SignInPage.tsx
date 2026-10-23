@@ -10,6 +10,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { send } from '../api/client'
 import { authMessage, firebaseAuth } from '../lib/firebase'
+import { PublicNav } from '../components/PublicNav'
 
 type Mode = 'sign-in' | 'create' | 'reset'
 
@@ -62,17 +63,18 @@ export function SignInPage() {
   const titles: Record<Mode, string> = { 'sign-in': 'Sign in', create: 'Create your account', reset: 'Reset your password' }
 
   return (
-    <main className="auth-shell">
-      <section className="auth-story">
-        <Link className="wordmark" to="/">Bakery Orders<span aria-hidden="true">.</span></Link>
+    <main className="auth-page">
+      <PublicNav />
+      <div className="auth-shell">
+        <section className="auth-story">
         <div className="auth-story-copy">
           <p className="landing-kicker">A clearer day starts here</p>
           <h1>Keep the beautiful work moving.</h1>
           <p>One calm workspace for bakery teams to turn good ideas into orders worth making.</p>
         </div>
         <div className="auth-story-image" role="img" aria-label="Fresh pastries ready for a bakery counter" />
-      </section>
-      <section className="auth-panel">
+        </section>
+        <section className="auth-panel">
         <div className="auth-form-wrap">
           <div className="stack">
             <span className="eyebrow">For bakery teams</span>
@@ -160,7 +162,8 @@ export function SignInPage() {
           </div>
         </div>
         <Link className="auth-home-link" to="/">← Back to Bakery Orders</Link>
-      </section>
+        </section>
+      </div>
     </main>
   )
 }

@@ -1,15 +1,10 @@
 import { Link } from 'react-router-dom'
+import { PublicNav } from '../components/PublicNav'
 
 export function LandingPage() {
   return (
     <main className="marketing-shell">
-      <nav className="marketing-nav" aria-label="Main navigation">
-        <Link className="wordmark" to="/">Bakery Orders<span aria-hidden="true">.</span></Link>
-        <div className="marketing-nav-links">
-          <a href="#workflow">How it works</a>
-          <Link className="nav-sign-in" to="/orders">Staff sign in <span aria-hidden="true">↗</span></Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       <section className="landing-hero">
         <div className="landing-copy">
