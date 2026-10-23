@@ -8,7 +8,6 @@ export function LandingPage() {
 
       <section className="landing-hero">
         <div className="landing-copy">
-          <p className="landing-kicker">A calmer front of house for independent bakeries</p>
           <h1>More beautiful work. Less order chaos.</h1>
           <p className="landing-lede">
             Bakery Orders gives your team one clear place to receive custom briefs, quote
