@@ -13,6 +13,7 @@ import { OrdersPage } from './pages/OrdersPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { SchedulePage } from './pages/SchedulePage'
 import { SettingsPage } from './pages/SettingsPage'
+import { SignInPage } from './pages/SignInPage'
 import { StockPage } from './pages/StockPage'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/apply" element={<ApplicationPage />} />
+          <Route path="/signin" element={<SignInPage />} />
           <Route path="/admin/applications" element={<AuthGate><AdminGate><BakeryApplicationsPage /></AdminGate></AuthGate>} />
           <Route element={<AuthGate><BakeryProvider><Layout /></BakeryProvider></AuthGate>}>
             <Route path="orders" element={<OrdersPage />} />
