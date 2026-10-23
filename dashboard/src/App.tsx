@@ -15,7 +15,6 @@ import { SchedulePage } from './pages/SchedulePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { SignInPage } from './pages/SignInPage'
 import { StockPage } from './pages/StockPage'
-import { firebaseEnabled } from './lib/firebase'
 
 export default function App() {
   return (
@@ -24,7 +23,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/apply" element={<ApplicationPage />} />
-          <Route path="/signin" element={firebaseEnabled ? <SignInPage /> : <Navigate to="/orders" replace />} />
+          <Route path="/signin" element={<SignInPage />} />
           <Route path="/admin/applications" element={<AuthGate><AdminGate><BakeryApplicationsPage /></AdminGate></AuthGate>} />
           <Route element={<AuthGate><BakeryProvider><Layout /></BakeryProvider></AuthGate>}>
             <Route path="orders" element={<OrdersPage />} />

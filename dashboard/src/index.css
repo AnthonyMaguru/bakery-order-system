@@ -407,6 +407,7 @@ fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
 .auth-page { min-height: 100vh; background: var(--ground); padding: 24px clamp(20px, 5vw, 72px) 32px; }
 .auth-page > .marketing-nav { max-width: 1240px; margin: 0 auto; }
 .auth-shell { max-width: 1240px; min-height: calc(100vh - 88px); margin: 0 auto; display: grid; grid-template-columns: minmax(320px, .9fr) minmax(400px, 1.1fr); background: var(--ground); }
+.auth-shell-simple { min-height: calc(100vh - 88px); }
 .auth-story { min-height: 100%; padding: clamp(24px, 5vw, 72px); display: flex; flex-direction: column; background: var(--ink); color: var(--ground); }
 .auth-story .wordmark { color: var(--ground); }
 .auth-story-copy { max-width: 420px; margin-top: auto; padding: 80px 0 28px; }
