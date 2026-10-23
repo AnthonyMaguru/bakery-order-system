@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ToastProvider } from './components/ToastProvider'
 import { AuthGate } from './context/AuthGate'
+import { AdminGate } from './context/AdminGate'
 import { BakeryProvider } from './context/BakeryProvider'
 import { ApplicationPage } from './pages/ApplicationPage'
 import { BakeryApplicationsPage } from './pages/BakeryApplicationsPage'
@@ -21,7 +22,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/apply" element={<ApplicationPage />} />
-          <Route path="/admin/applications" element={<AuthGate><BakeryApplicationsPage /></AuthGate>} />
+          <Route path="/admin/applications" element={<AuthGate><AdminGate><BakeryApplicationsPage /></AdminGate></AuthGate>} />
           <Route element={<AuthGate><BakeryProvider><Layout /></BakeryProvider></AuthGate>}>
             <Route path="orders" element={<OrdersPage />} />
             <Route path="orders/:id" element={<OrderDetailPage />} />

@@ -71,6 +71,15 @@ iOS can wait until someone has a Mac.
    ```
 5. Reload the dashboard. From **Settings → Staff**, you can now add teammates (they need to sign in once first).
 
+To grant the first platform administrator access to bakery onboarding, run this against the production database after that account has signed in once:
+
+```bash
+cd backend
+npm run make-admin -- you@example.com
+```
+
+The dashboard route is `/admin/applications`. The backend still requires a Firebase ID token and the user's database role to be `ADMIN`; knowing the URL alone does not grant access.
+
 ## What to send, and what not to
 
 | Item | Safe to share in the team chat? |

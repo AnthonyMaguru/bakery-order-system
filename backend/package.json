@@ -16,7 +16,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "make-owner": "tsx prisma/make-owner.ts"
+    "make-owner": "tsx prisma/make-owner.ts",
+    "make-admin": "tsx prisma/make-admin.ts"
   },
   "engines": {
     "node": ">=22"
