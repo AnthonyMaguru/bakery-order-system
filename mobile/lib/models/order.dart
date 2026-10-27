@@ -75,6 +75,8 @@ class Order {
     this.cancelledBy,
     this.bakeryPhone,
     this.mobileMoneyNumber,
+    this.designImageUrl,
+    this.inspirationImageUrls = const [],
   });
 
   final String id;
@@ -109,6 +111,8 @@ class Order {
   final String? cancelledBy;
   final String? bakeryPhone;
   final String? mobileMoneyNumber;
+  final String? designImageUrl;
+  final List<String> inspirationImageUrls;
 
   bool get needsQuote => type != 'STANDARD';
   Quotation? get latestQuote => quotations.isEmpty ? null : quotations.first;
@@ -152,6 +156,8 @@ class Order {
       deliveryAddress: json['deliveryAddress'] as String?,
       cancelReason: json['cancelReason'] as String?,
       cancelledBy: json['cancelledBy'] as String?,
+      designImageUrl: json['designImageUrl'] as String?,
+      inspirationImageUrls: ((json['inspirationImageUrls'] as List?) ?? const []).cast<String>(),
     );
   }
 }

@@ -94,7 +94,6 @@ const sweetCrumbsStock = [
 async function seedSweetCrumbs() {
   const bakery = await prisma.bakery.upsert({
     where: { slug: "sweet-crumbs" },
-    update: {},
     create: {
       slug: "sweet-crumbs",
       name: "Sweet Crumbs Bakery",
@@ -108,6 +107,12 @@ async function seedSweetCrumbs() {
       customCakesPerDay: 4,
       customNoticeDays: 4,
       closedWeekdays: [7],
+      handoverTimes: ["09:00", "11:30", "14:00", "17:00"],
+      occasions: ["Birthday", "Wedding", "Introduction", "Graduation", "Baby shower", "Anniversary", "Other"],
+    },
+    update: {
+      handoverTimes: ["09:00", "11:30", "14:00", "17:00"],
+      occasions: ["Birthday", "Wedding", "Introduction", "Graduation", "Baby shower", "Anniversary", "Other"],
     },
   });
   if ((await prisma.product.count({ where: { bakeryId: bakery.id } })) > 0) return bakery;
@@ -157,7 +162,10 @@ async function seedSweetCrumbs() {
 async function seedMamasOven() {
   const bakery = await prisma.bakery.upsert({
     where: { slug: "mamas-oven" },
-    update: {},
+    update: {
+      handoverTimes: ["10:00", "13:00", "16:00"],
+      occasions: ["Birthday", "Bridal Shower", "Corporate Event", "Graduation", "Baby shower", "Other"],
+    },
     create: {
       slug: "mamas-oven",
       name: "Mama’s Oven",
@@ -168,6 +176,8 @@ async function seedMamasOven() {
       deliveryFee: 7000,
       customCakesPerDay: 2,
       customNoticeDays: 7,
+      handoverTimes: ["10:00", "13:00", "16:00"],
+      occasions: ["Birthday", "Bridal Shower", "Corporate Event", "Graduation", "Baby shower", "Other"],
     },
   });
   if ((await prisma.product.count({ where: { bakeryId: bakery.id } })) === 0) {

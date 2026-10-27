@@ -292,7 +292,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         _Section(
           title: 'Your cake',
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (order.designImageUrl != null && order.designImageUrl!.startsWith('http')) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: Image.network(
+                      order.designImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               for (final s in order.selections) _Detail(s.key, s.value),
               if (order.selections.isEmpty && order.itemNames.isNotEmpty)
                 _Detail('Cake', order.itemNames.join(', ')),
@@ -301,6 +316,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 _Detail('Writing', order.inscription!),
               if (order.theme != null) _Detail('Theme', order.theme!),
               if (order.notes != null) _Detail('Notes', order.notes!),
+              if (order.inspirationImageUrls.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Inspiration photos', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final url in order.inspirationImageUrls)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(url, width: 64, height: 64, fit: BoxFit.cover),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -136,7 +136,24 @@ function OrdersTable({ orders }: { orders: OrderSummary[] }) {
                   <div className="sub">{o.customer.phone ?? o.customer.email ?? ''}</div>
                 </td>
                 <td>
-                  <div>{orderTitle(o)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600 }}>{orderTitle(o)}</span>
+                    {o.designImageUrl && (
+                      <span
+                        title="Includes custom cake design / AI concept"
+                        style={{
+                          fontSize: 11,
+                          padding: '1px 6px',
+                          borderRadius: 6,
+                          background: 'var(--accent-soft)',
+                          color: 'var(--accent)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✨ Design
+                      </span>
+                    )}
+                  </div>
                   <div className="sub">
                     BK{o.number} · {TYPE_LABELS[o.type]} · {o.fulfilment === 'PICKUP' ? 'Pickup' : `Delivery, ${o.deliveryArea ?? ''}`}
                   </div>

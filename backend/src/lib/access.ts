@@ -2,10 +2,11 @@ import type { NextFunction, Request, Response } from "express";
 import { forbidden, notFound } from "./http-error.js";
 import { prisma, type MemberRole, type Role, type User } from "./prisma.js";
 
-// Platform admins can act as staff of any bakery.
+// Bakery staff access check. Platform admin status DOES NOT automatically grant
+// access to a bakery's private internal business data (stock, recipes, orders, financial settings).
+// To access a bakery's operations, a user must be an explicit member of that bakery.
 export async function isMember(user: User | undefined, bakeryId: string, roles?: MemberRole[]) {
   if (!user) return false;
-  if (user.role === "ADMIN") return true;
   const member = await prisma.bakeryMember.findUnique({
     where: { bakeryId_userId: { bakeryId, userId: user.id } },
     select: { role: true },

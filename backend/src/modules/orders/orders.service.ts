@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { env } from "../../config/env.js";
 import { isMember } from "../../lib/access.js";
 import { addDays, dateFromKey } from "../../lib/dates.js";
 import { badRequest, conflict, forbidden, notFound } from "../../lib/http-error.js";
@@ -63,17 +64,18 @@ function requestFingerprint(input: CreateOrderInput) {
 // Reading
 // ---------------------------------------------------------------------------
 
-export function listCustomerOrders(user: User, status?: OrderStatus) {
-  return prisma.order.findMany({
+export async function listCustomerOrders(user: User, status?: OrderStatus) {
+  const orders = await prisma.order.findMany({
     where: { customerId: user.id, status },
     include: orderSummary,
     orderBy: { dueDate: "asc" },
   });
+  return orders.map(normalizeOrderUrls);
 }
 
-export function listBakeryOrders(bakeryId: string, { status, from, to, q }: BakeryOrdersQuery) {
+export async function listBakeryOrders(bakeryId: string, { status, from, to, q }: BakeryOrdersQuery) {
   const number = q?.match(/^(?:BK)?(\d+)$/i)?.[1];
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: {
       bakeryId,
       status,
@@ -93,6 +95,7 @@ export function listBakeryOrders(bakeryId: string, { status, from, to, q }: Bake
     include: orderSummary,
     orderBy: { dueDate: "asc" },
   });
+  return orders.map(normalizeOrderUrls);
 }
 
 // Counts for the dashboard's tabs, and orders due soon that nobody has touched.
@@ -112,6 +115,29 @@ export async function bakeryOrderSummary(bakeryId: string) {
   return { counts: Object.fromEntries(byStatus.map((s) => [s.status, s._count])), needsAttention };
 }
 
+export function normalizeOrderUrls<T extends { designImageUrl?: string | null; images?: Array<{ url: string }> }>(order: T): T {
+  if (!order) return order;
+  const fixUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    const match = url.match(/\/uploads\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      const uploadId = match[1];
+      const base = env.PUBLIC_API_URL ?? "http://localhost:4000/api";
+      return `${base.replace(/\/$/, "")}/uploads/${uploadId}`;
+    }
+    return url;
+  };
+
+  return {
+    ...order,
+    designImageUrl: order.designImageUrl ? fixUrl(order.designImageUrl) : order.designImageUrl,
+    images: order.images?.map((img) => ({
+      ...img,
+      url: fixUrl(img.url) ?? img.url,
+    })),
+  };
+}
+
 // Customers see their own orders; bakery staff see their bakery's. Others get a 404,
 // so order ids can't be probed.
 async function loadForUser(user: User, id: string) {
@@ -120,7 +146,7 @@ async function loadForUser(user: User, id: string) {
   const isCustomer = order.customerId === user.id;
   const isStaff = await isMember(user, order.bakeryId);
   if (!isCustomer && !isStaff) throw notFound("Order");
-  return { order, isCustomer, isStaff };
+  return { order: normalizeOrderUrls(order), isCustomer, isStaff };
 }
 
 export async function getOrder(user: User, id: string) {
@@ -137,11 +163,12 @@ async function loadForStaff(user: User, id: string) {
 // Placing an order
 // ---------------------------------------------------------------------------
 
-function findRetry(user: User, clientRequestId: string) {
-  return prisma.order.findUnique({
+async function findRetry(user: User, clientRequestId: string) {
+  const found = await prisma.order.findUnique({
     where: { customerId_clientRequestId: { customerId: user.id, clientRequestId } },
     include: orderDetail,
   });
+  return found ? normalizeOrderUrls(found) : null;
 }
 
 export async function createOrder(user: User, input: CreateOrderInput) {

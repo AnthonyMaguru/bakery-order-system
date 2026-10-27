@@ -8,6 +8,7 @@ import { useBakery } from '../context/bakery-context'
 import { useToast } from '../context/toast-context'
 import { useAsync } from '../hooks/useAsync'
 import { formatDateTime, formatMoney, orderRef } from '../lib/format'
+import { resolveImageUrl } from '../lib/image'
 import {
   canQuote,
   canRecordPayment,
@@ -180,22 +181,79 @@ function DesignSection({ order }: { order: Order }) {
         </ul>
       )}
 
-      {(chosen.size > 0 || order.designImageUrl) && (
-        <div className="row" style={{ alignItems: 'flex-start', gap: 24 }}>
-          {order.designImageUrl && (
-            <a href={order.designImageUrl} target="_blank" rel="noreferrer">
-              <img className="design-image" src={order.designImageUrl} alt="The customer's design from the cake builder" />
-            </a>
-          )}
-          <dl className="dl" style={{ flex: '1 1 260px' }}>
-            {[...chosen].map(([group, names]) => (
-              <div key={group}>
-                <dt>{group}</dt>
-                <dd>{names.join(', ')}</dd>
+      {order.designImageUrl && (
+        <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)', marginBottom: 20 }}>
+          <div className="row-between" style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '4px 10px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              ✨ {chosen.size > 0 ? 'Cake Builder Design' : 'Custom AI Cake Concept'}
+            </span>
+            {resolveImageUrl(order.designImageUrl) && (
+              <a
+                href={resolveImageUrl(order.designImageUrl)}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}
+              >
+                Open full photo ↗
+              </a>
+            )}
+          </div>
+          <div className="row" style={{ alignItems: 'flex-start', gap: 24, flexWrap: 'wrap' }}>
+            {resolveImageUrl(order.designImageUrl) ? (
+              <a href={resolveImageUrl(order.designImageUrl)} target="_blank" rel="noreferrer" style={{ display: 'block' }}>
+                <img
+                  className="design-image"
+                  style={{ width: '280px', height: '210px', objectFit: 'cover', borderRadius: '14px', display: 'block' }}
+                  src={resolveImageUrl(order.designImageUrl)}
+                  alt="Customer's bespoke cake design"
+                  onError={(e) => {
+                    const target = e.currentTarget
+                    target.style.display = 'none'
+                  }}
+                />
+              </a>
+            ) : (
+              <div
+                style={{
+                  width: '280px',
+                  height: '160px',
+                  background: 'var(--sand)',
+                  borderRadius: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--muted)',
+                  fontSize: 13,
+                  textAlign: 'center',
+                  padding: 16,
+                }}
+              >
+                AI Design Concept Attached
               </div>
-            ))}
-          </dl>
+            )}
+            {chosen.size > 0 && (
+              <dl className="dl" style={{ flex: '1 1 260px' }}>
+                {[...chosen].map(([group, names]) => (
+                  <div key={group}>
+                    <dt>{group}</dt>
+                    <dd>{names.join(', ')}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
         </div>
+      )}
+
+      {chosen.size > 0 && !order.designImageUrl && (
+        <dl className="dl" style={{ marginBottom: 20 }}>
+          {[...chosen].map(([group, names]) => (
+            <div key={group}>
+              <dt>{group}</dt>
+              <dd>{names.join(', ')}</dd>
+            </div>
+          ))}
+        </dl>
       )}
 
       <dl className="dl-rows">
@@ -219,8 +277,8 @@ function DesignSection({ order }: { order: Order }) {
           <span className="muted small">Inspiration photos</span>
           <div className="photos">
             {order.images.map((img, i) => (
-              <a key={img.id} href={img.url} target="_blank" rel="noreferrer">
-                <img src={img.url} alt={`Inspiration photo ${i + 1}`} />
+              <a key={img.id} href={resolveImageUrl(img.url)} target="_blank" rel="noreferrer">
+                <img src={resolveImageUrl(img.url)} alt={`Inspiration photo ${i + 1}`} />
               </a>
             ))}
           </div>

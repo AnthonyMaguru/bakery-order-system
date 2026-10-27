@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { env, isProduction } from "../config/env.js";
-import { firebaseAuth } from "../lib/firebase.js";
+import { firebaseAuth, firebaseConfigured } from "../lib/firebase.js";
 import { HttpError } from "../lib/http-error.js";
 import { prisma, type User } from "../lib/prisma.js";
 
@@ -36,6 +36,17 @@ async function identify<P>(req: Request<P>): Promise<Identity> {
 
   const token = req.header("authorization")?.match(/^Bearer (.+)$/)?.[1];
   if (!token) throw new HttpError(401, "Missing bearer token");
+
+  if (!firebaseConfigured && env.AUTH_DEV_BYPASS && !isProduction) {
+    return {
+      uid: "dev:customer",
+      name: "Customer",
+      dev: {
+        role: "CUSTOMER",
+        bakerySlug: DEFAULT_DEV_BAKERY,
+      },
+    };
+  }
 
   const auth = firebaseAuth();
   try {

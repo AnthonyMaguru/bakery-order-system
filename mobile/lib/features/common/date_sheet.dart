@@ -5,8 +5,8 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../models/bakery.dart';
 
-/// Times the bakery hands cakes over. Fixed for now; could become a bakery setting.
-const handoverTimes = [(10, 0), (14, 0), (17, 0)];
+/// Default handover times fallback if a bakery has no custom times configured.
+const defaultHandoverTimes = [(10, 0), (14, 0), (17, 0)];
 
 /// Which days can be picked. Custom cakes need an open slot; ready made ones only
 /// need the bakery open and enough days to make them.
@@ -42,7 +42,10 @@ class _DateSheet extends StatefulWidget {
 class _DateSheetState extends State<_DateSheet> {
   late Future<List<CalendarDay>> _days = _load();
   late String? _picked = widget.initial == null ? null : dayKey(widget.initial!);
-  late (int, int) _time = widget.initial == null ? handoverTimes[1] : (widget.initial!.hour, widget.initial!.minute);
+  List<(int, int)> get _times => widget.bakery.parsedHandoverTimes;
+  late (int, int) _time = widget.initial == null
+      ? (_times.isNotEmpty ? _times[0] : defaultHandoverTimes[1])
+      : (widget.initial!.hour, widget.initial!.minute);
   int _month = 0;
 
   Future<List<CalendarDay>> _load() async {
@@ -152,7 +155,7 @@ class _DateSheetState extends State<_DateSheet> {
         Wrap(
           spacing: 8,
           children: [
-            for (final t in handoverTimes)
+            for (final t in _times)
               ChoiceChip(
                 label: Text(timeLabel(DateTime(2000, 1, 1, t.$1, t.$2))),
                 selected: _time == t,

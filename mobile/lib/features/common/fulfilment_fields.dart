@@ -45,9 +45,21 @@ class FulfilmentFields extends StatelessWidget {
           selected: {fulfilment},
           onSelectionChanged: (s) => onFulfilment(s.first),
         ),
-        if (fulfilment == 'PICKUP' && bakery.address != null) ...[
+        if (fulfilment == 'PICKUP') ...[
           const SizedBox(height: 8),
-          Text('Pick up from ${bakery.address}', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            bakery.address != null
+                ? 'Pick up from ${bakery.address}, ${bakery.city}'
+                : 'Pick up from ${bakery.name}, ${bakery.city}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (bakery.handoverTimes.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Collection slots: ${bakery.handoverTimes.join(' · ')}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+            ),
+          ],
         ],
         if (fulfilment == 'DELIVERY') ...[
           const SizedBox(height: 16),
@@ -60,6 +72,13 @@ class FulfilmentFields extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('${bakery.name} delivers to these areas only.', style: Theme.of(context).textTheme.bodySmall),
+          if (bakery.handoverTimes.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Delivery slots: ${bakery.handoverTimes.join(' · ')}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+            ),
+          ],
           const SizedBox(height: 16),
           const FieldLabel('Delivery address'),
           TextField(

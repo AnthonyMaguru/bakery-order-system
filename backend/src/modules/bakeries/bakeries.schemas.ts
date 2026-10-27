@@ -37,6 +37,8 @@ export const BakerySettingsUpdate = z
     customCakesPerDay: z.number().int().min(0).max(100),
     customNoticeDays: z.number().int().min(0).max(60),
     closedWeekdays: z.array(z.number().int().min(1).max(7)).max(7),
+    handoverTimes: z.array(z.string().trim()).max(24),
+    occasions: z.array(z.string().trim().min(1).max(50)).max(30),
   })
   .partial();
 export type BakerySettingsUpdate = z.infer<typeof BakerySettingsUpdate>;

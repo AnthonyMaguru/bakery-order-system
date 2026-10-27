@@ -22,7 +22,6 @@ const GROUPS: { label: string; links: { to: string; label: string; icon: IconNam
 
 export function Layout() {
   const { me, bakery, isOwner, newOrders, stockAlerts, switchBakery } = useBakery()
-  const isAdmin = me.role === 'ADMIN'
   const [menuOpen, setMenuOpen] = useState(false)
 
   const badge = (to: string) => {
@@ -45,17 +44,22 @@ export function Layout() {
           ))}
         </div>
       ))}
-      {isAdmin && (
-        <div className="nav-group nav-admin-group">
-          <span className="nav-group-label">Platform</span>
-          <NavLink to="/admin/applications" onClick={() => setMenuOpen(false)}>
-            <Icon name="settings" />
-            <span>Bakery applications</span>
-          </NavLink>
-        </div>
-      )}
     </nav>
   )
+
+  const handleSignOut = async () => {
+    try {
+      if (firebaseEnabled) {
+        await signOut(firebaseAuth())
+      }
+    } catch (err) {
+      console.error('Sign out error', err)
+    } finally {
+      localStorage.clear()
+      sessionStorage.clear()
+      window.location.href = '/signin'
+    }
+  }
 
   return (
     <div className="app">
@@ -89,13 +93,14 @@ export function Layout() {
         </div>
         {nav}
         <div className="sidebar-user">
-          <strong>{me.name ?? me.email ?? 'Signed in'}</strong>
-          <span>{isOwner ? 'Owner' : 'Staff'}</span>
-          {firebaseEnabled && (
-            <button type="button" className="btn btn-sm sidebar-sign-out" onClick={() => void signOut(firebaseAuth())}>
-              Sign out
-            </button>
-          )}
+          <div className="sidebar-user-info">
+            <strong title={me.name ?? me.email ?? 'Signed in'}>{me.name ?? me.email ?? 'Signed in'}</strong>
+            <span className="sidebar-user-role">{isOwner ? 'Owner' : 'Staff'}</span>
+          </div>
+          <button type="button" className="sidebar-sign-out" onClick={handleSignOut} aria-label="Sign out">
+            <Icon name="logout" size={16} />
+            <span>Sign out</span>
+          </button>
         </div>
       </aside>
       <main className="main">

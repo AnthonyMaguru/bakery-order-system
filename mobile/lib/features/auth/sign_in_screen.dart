@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../app.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
@@ -27,6 +28,16 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _obscurePassword = true;
   String? _error;
   String? _notice;
+
+  void _leave() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(false);
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeShell()),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -90,8 +101,17 @@ class _SignInScreenState extends State<SignInScreen> {
             password: _password.text,
           );
       }
-      await Push.instance.register();
-      if (mounted) Navigator.of(context).pop(true);
+      await Push.instance.register().catchError((e) {
+        debugPrint('Push register failed: $e');
+      });
+      if (!mounted) return;
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(true);
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeShell()),
+        );
+      }
     } catch (e) {
       if (mounted) setState(() => _error = authMessage(e));
     } finally {
@@ -109,29 +129,25 @@ class _SignInScreenState extends State<SignInScreen> {
     };
     return Scaffold(
       appBar: AppBar(
-        leading: canBrowseWithoutSigningIn
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Continue browsing',
-                onPressed: () => Navigator.of(context).pop(false),
-              )
-            : null,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Continue browsing',
+          onPressed: _leave,
+        ),
       ),
       body: ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.accentSoft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(
-              Icons.local_cafe_outlined,
-              color: AppColors.accent,
-              size: 32,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/bak1.png',
+                height: 68,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(height: 20),

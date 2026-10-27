@@ -17,3 +17,34 @@ export async function compressImage(file: Blob, maxSide = 1600, quality = 0.82):
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Couldn't prepare the photo"))), 'image/jpeg', quality),
   )
 }
+
+// Resolves any image URL so it can be reliably loaded in the browser,
+// remapping emulator hosts (10.0.2.2), test ports, or relative upload paths to the active API server.
+export function resolveImageUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+
+  // Internal placeholder URLs cannot be loaded directly in the browser
+  if (trimmed.startsWith('pollinations://')) {
+    return ''
+  }
+
+  // If it's a backend upload, route it through the current API base URL
+  const uploadMatch = trimmed.match(/\/uploads\/([a-zA-Z0-9_-]+)/)
+  if (uploadMatch) {
+    const uploadId = uploadMatch[1]
+    const configuredApi = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api'
+    const apiBase = configuredApi.startsWith('http')
+      ? configuredApi
+      : `${window.location.origin}${configuredApi}`
+    return `${apiBase.replace(/\/$/, '')}/uploads/${uploadId}`
+  }
+
+  // Handle Android emulator loopback IPs if any linger
+  if (trimmed.includes('10.0.2.2')) {
+    return trimmed.replace(/10\.0\.2\.2(:\d+)?/, (_, port) => `${window.location.hostname}${port || ''}`)
+  }
+
+  return trimmed
+}

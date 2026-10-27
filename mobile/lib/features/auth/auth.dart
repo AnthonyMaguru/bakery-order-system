@@ -1,21 +1,34 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/config.dart';
 import '../../core/firebase_setup.dart';
 import 'push.dart';
 import 'sign_in_screen.dart';
 
+/// True when the user is logged into Firebase, or has dev bypass configured.
+bool get isCustomerSignedIn {
+  if (firebaseReady) {
+    return FirebaseAuth.instance.currentUser != null;
+  }
+  return AppConfig.devUser.isNotEmpty;
+}
+
 /// Browsing is open to everyone; ordering and My orders need an account.
 /// Returns true when the customer is signed in (or the test login is in use).
 Future<bool> ensureSignedIn(BuildContext context) async {
-  if (!firebaseReady || FirebaseAuth.instance.currentUser != null) return true;
-  final signedIn = await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => const SignInScreen()));
+  if (isCustomerSignedIn) return true;
+  final signedIn = await Navigator.of(context).push<bool>(
+    MaterialPageRoute(fullscreenDialog: true, builder: (_) => const SignInScreen()),
+  );
   return signedIn ?? false;
 }
 
 /// Whether someone is signed in, for screens that change when they do.
 Stream<bool> signedInChanges() =>
-    firebaseReady ? FirebaseAuth.instance.authStateChanges().map((u) => u != null) : Stream.value(true);
+    firebaseReady
+        ? FirebaseAuth.instance.authStateChanges().map((u) => u != null)
+        : Stream.value(AppConfig.devUser.isNotEmpty);
 
 Future<void> signOut() async {
   if (!firebaseReady) return;

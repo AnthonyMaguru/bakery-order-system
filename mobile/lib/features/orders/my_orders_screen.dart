@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
@@ -21,6 +23,21 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   late Future<List<Order>> _orders;
   var _started = false;
   bool _past = false;
+  StreamSubscription<bool>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSub = signedInChanges().listen((_) {
+      if (mounted) _refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -32,9 +49,20 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 
   Future<List<Order>> _load() async {
     if (!mounted) return [];
-    if (!await ensureSignedIn(context)) return [];
-    final data = await api.get('/orders') as List;
-    return data.map((o) => Order.fromJson(o as Map<String, dynamic>)).toList();
+    if (!isCustomerSignedIn) return [];
+    try {
+      final data = await api.get('/orders') as List;
+      return data.map((o) => Order.fromJson(o as Map<String, dynamic>)).toList();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 ||
+          e.message.toLowerCase().contains('bearer') ||
+          e.message.toLowerCase().contains('unauthorized')) {
+        return [];
+      }
+      rethrow;
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<void> _refresh() async {
@@ -123,12 +151,59 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     else if (!snapshot.hasData)
                       const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
                     else ...[
-                      for (final o in _past ? past : open) _OrderRow(order: o, onClosed: _refresh),
-                      if ((_past ? past : open).isEmpty && (outbox.isEmpty || _past))
+                      if (!isCustomerSignedIn)
                         Padding(
                           padding: const EdgeInsets.all(20),
-                          child: Text(_past ? 'Finished and cancelled orders show here.' : 'No orders yet. Find a bakery to get started.', style: const TextStyle(color: AppColors.muted)),
-                        ),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: AppColors.line),
+                              boxShadow: AppShadows.card,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Icon(
+                                  Icons.receipt_long_outlined,
+                                  size: 36,
+                                  color: AppColors.accent,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Sign in to view your orders',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Keep track of your quotes, upcoming celebration cakes, and order history.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppColors.muted, fontSize: 13),
+                                ),
+                                const SizedBox(height: 18),
+                                FilledButton(
+                                  onPressed: () async {
+                                    final signedIn = await ensureSignedIn(context);
+                                    if (signedIn) _refresh();
+                                  },
+                                  child: const Text('Sign in / Create account'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else ...[
+                        for (final o in _past ? past : open) _OrderRow(order: o, onClosed: _refresh),
+                        if ((_past ? past : open).isEmpty && (outbox.isEmpty || _past))
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Text(_past ? 'Finished and cancelled orders show here.' : 'No orders yet. Find a bakery to get started.', style: const TextStyle(color: AppColors.muted)),
+                          ),
+                      ],
                     ],
                   ],
                 );
@@ -157,31 +232,50 @@ class _OrderRow extends StatelessWidget {
       'READY' => order.fulfilment == 'PICKUP' ? 'Ready to collect' : 'On its way soon',
       _ => null,
     };
-    return InkWell(
-      onTap: () async {
-        await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => OrderDetailScreen(orderId: order.id)));
-        onClosed();
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.line),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () async {
+            await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => OrderDetailScreen(orderId: order.id)));
+            onClosed();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(order.title, style: Theme.of(context).textTheme.titleMedium)),
-                Pill(statusLabels[order.status]!, background: bg, foreground: fg),
+                Row(
+                  children: [
+                    Expanded(child: Text(order.title, style: Theme.of(context).textTheme.titleMedium)),
+                    Pill(statusLabels[order.status]!, background: bg, foreground: fg),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text('${order.bakeryName} · ${dayLabel(order.dueDate)}, ${order.fulfilment == 'PICKUP' ? 'pickup' : 'delivery'}', style: const TextStyle(fontSize: 14, color: AppColors.muted)),
+                if (next != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: order.status == 'QUOTED' ? AppColors.accentSoft : AppColors.sand,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(next, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: order.status == 'QUOTED' ? AppColors.accent : AppColors.ink2)),
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 4),
-            Text('${order.bakeryName} · ${dayLabel(order.dueDate)}, ${order.fulfilment == 'PICKUP' ? 'pickup' : 'delivery'}', style: const TextStyle(fontSize: 14, color: AppColors.muted)),
-            if (next != null) ...[
-              const SizedBox(height: 4),
-              Text(next, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: order.status == 'QUOTED' ? AppColors.accent : AppColors.ink2)),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -197,9 +291,14 @@ class _OutboxRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final failed = item.error != null;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: failed ? AppColors.dangerSoft : AppColors.line),
+        boxShadow: AppShadows.card,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

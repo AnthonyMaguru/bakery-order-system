@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/bakery.dart';
 import '../../models/product.dart';
+import '../auth/auth.dart';
 import '../custom_order/occasion_step.dart';
 import 'quick_checkout_screen.dart';
 
@@ -37,9 +38,11 @@ class _ProductScreenState extends State<ProductScreen> {
             pinned: true,
             backgroundColor: AppColors.sand,
             flexibleSpace: FlexibleSpaceBar(
-              background: p.imageUrl == null
-                  ? const Icon(Icons.cake_outlined, size: 64, color: AppColors.muted)
-                  : Image.network(p.imageUrl!, fit: BoxFit.cover, semanticLabel: p.name),
+              background: AppImage(
+                url: p.imageUrl,
+                fallbackCategory: p.name,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           SliverPadding(
@@ -98,15 +101,23 @@ class _ProductScreenState extends State<ProductScreen> {
         child: Column(
           children: [
             FilledButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => QuickCheckoutScreen(product: p, bakery: widget.bakery, quantity: _quantity)),
-              ),
+              onPressed: () async {
+                if (!await ensureSignedIn(context)) return;
+                if (!context.mounted) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => QuickCheckoutScreen(product: p, bakery: widget.bakery, quantity: _quantity)),
+                );
+              },
               child: Text('Order this · ${money(p.price * _quantity, widget.bakery.currency)}'),
             ),
             if (p.customisable) ...[
               const SizedBox(height: 10),
               OutlinedButton(
-                onPressed: () => Navigator.of(context).push(OccasionStep.route(widget.bakery, basedOn: p)),
+                onPressed: () async {
+                  if (!await ensureSignedIn(context)) return;
+                  if (!context.mounted) return;
+                  Navigator.of(context).push(OccasionStep.route(widget.bakery, basedOn: p));
+                },
                 child: const Text('Customise this cake'),
               ),
             ],

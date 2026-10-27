@@ -251,3 +251,68 @@ void showError(BuildContext context, Object error) {
     context,
   ).showSnackBar(SnackBar(content: Text(error.toString())));
 }
+
+/// Renders an image with automatic graceful fallback to bundled culinary photography.
+class AppImage extends StatelessWidget {
+  const AppImage({
+    super.key,
+    this.url,
+    this.fallbackCategory,
+    this.fit = BoxFit.cover,
+    this.width,
+    this.height,
+    this.borderRadius,
+  });
+
+  final String? url;
+  final String? fallbackCategory;
+  final BoxFit fit;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
+
+  static String resolveAsset(String? name) {
+    final lower = (name ?? '').toLowerCase();
+    if (lower.contains('choc') || lower.contains('fudge')) return 'assets/images/chocolate_fudge.jpg';
+    if (lower.contains('lemon') || lower.contains('drizzle')) return 'assets/images/lemon_drizzle.jpg';
+    if (lower.contains('red') || lower.contains('velvet')) return 'assets/images/red_velvet.jpg';
+    if (lower.contains('vanilla') || lower.contains('sponge')) return 'assets/images/vanilla_sponge.jpg';
+    return 'assets/images/bakery_hero.jpg';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final assetPath = resolveAsset(fallbackCategory);
+
+    Widget imageWidget;
+    if (url != null && url!.startsWith('http')) {
+      imageWidget = Image.network(
+        url!,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, _, _) => Image.asset(
+          assetPath,
+          width: width,
+          height: height,
+          fit: fit,
+        ),
+      );
+    } else {
+      imageWidget = Image.asset(
+        assetPath,
+        width: width,
+        height: height,
+        fit: fit,
+      );
+    }
+
+    if (borderRadius != null) {
+      return ClipRRect(
+        borderRadius: borderRadius!,
+        child: imageWidget,
+      );
+    }
+    return imageWidget;
+  }
+}

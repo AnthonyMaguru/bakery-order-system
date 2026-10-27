@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import { uploadPhoto } from '../api/uploads'
-import { compressImage } from '../lib/image'
+import { compressImage, resolveImageUrl } from '../lib/image'
 
 interface Props {
   label: string
@@ -37,7 +37,7 @@ export function PhotoField({ label, value, onChange, disabled }: Props) {
         {label} <span className="optional">· optional</span>
       </span>
       <div className="row" style={{ alignItems: 'flex-start' }}>
-        {value && <img src={value} alt="" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12 }} />}
+        {value && <img src={resolveImageUrl(value)} alt="" style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 12 }} />}
         <div className="stack">
           <button type="button" className="btn btn-outline" aria-describedby={`${id}-label`} disabled={disabled || busy} onClick={() => input.current?.click()}>
             {busy ? 'Uploading…' : value ? 'Change photo' : 'Add a photo'}

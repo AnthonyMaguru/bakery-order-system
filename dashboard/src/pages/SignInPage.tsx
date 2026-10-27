@@ -1,12 +1,15 @@
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
 } from 'firebase/auth'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getMe } from '../api/bakeries'
 import { send } from '../api/client'
 import { authMessage, firebaseAuth } from '../lib/firebase'
 import { PublicNav } from '../components/PublicNav'
@@ -14,6 +17,7 @@ import { PublicNav } from '../components/PublicNav'
 type Mode = 'sign-in' | 'create' | 'reset'
 
 export function SignInPage() {
+  const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>('sign-in')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -21,6 +25,22 @@ export function SignInPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    return onAuthStateChanged(firebaseAuth(), (user) => {
+      if (user) {
+        getMe()
+          .then((me) => {
+            if (me.role === 'ADMIN' && me.bakeries.length === 0) {
+              navigate('/admin/overview', { replace: true })
+            } else {
+              navigate('/orders', { replace: true })
+            }
+          })
+          .catch(() => undefined)
+      }
+    })
+  }, [navigate])
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true)
@@ -56,7 +76,16 @@ export function SignInPage() {
         await send('PATCH', '/users/me', { name: name.trim() }).catch(() => undefined)
       })
     }
-    return run(() => signInWithEmailAndPassword(auth, email.trim(), password))
+    return run(async () => {
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password)
+      await cred.user.getIdToken(true)
+      const me = await getMe().catch(() => null)
+      if (me && me.role === 'ADMIN' && me.bakeries.length === 0) {
+        navigate('/admin/overview', { replace: true })
+      } else {
+        navigate('/orders', { replace: true })
+      }
+    })
   }
 
   const titles: Record<Mode, string> = { 'sign-in': 'Sign in', create: 'Create your account', reset: 'Reset your password' }

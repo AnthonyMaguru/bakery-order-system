@@ -18,6 +18,11 @@ const EnvSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  // Optional OpenAI API key for AI cake visualization and image generation.
+  OPENAI_API_KEY: z.string().optional(),
+  // Optional Google AI Studio / Gemini API key for cake visualization and prompt enhancement.
+  GEMINI_API_KEY: z.string().optional(),
+  AI_STUDIO_API_KEY: z.string().optional(),
 });
 
 export function parseEnv(input: NodeJS.ProcessEnv = process.env) {

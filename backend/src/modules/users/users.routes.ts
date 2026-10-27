@@ -8,8 +8,20 @@ export const usersRouter = Router();
 usersRouter.use(requireAuth);
 
 // Includes the bakeries the user works for; the dashboard opens the first one.
+// Platform administrators are independent and never attached to any bakery.
 usersRouter.get("/me", async (req, res) => {
   const { id, email, name, phone, role } = req.user!;
+  if (role === "ADMIN") {
+    return res.json({
+      id,
+      email,
+      name,
+      phone,
+      role,
+      bakeries: [],
+    });
+  }
+
   const memberships = await prisma.bakeryMember.findMany({
     where: { userId: id },
     select: { role: true, bakery: { select: { id: true, slug: true, name: true } } },

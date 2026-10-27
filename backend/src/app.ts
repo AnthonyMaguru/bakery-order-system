@@ -13,6 +13,8 @@ import { stockRouter } from "./modules/stock/stock.routes.js";
 import { uploadsRouter } from "./modules/uploads/uploads.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { bakeryApplicationsRouter } from "./modules/bakery-applications/bakery-applications.routes.js";
+import { adminRouter } from "./modules/admin/admin.routes.js";
+import { aiRouter } from "./modules/ai/ai.routes.js";
 
 export function createApp() {
   const app = express();
@@ -36,9 +38,11 @@ export function createApp() {
   });
 
   app.use("/api/users", usersRouter);
+  app.use("/api/admin", adminRouter);
   app.use("/api/bakery-applications", bakeryApplicationsRouter);
   app.use("/api/orders", ordersRouter);
   app.use("/api/uploads", uploadsRouter);
+  app.use("/api/ai", aiRouter);
   // Everything that belongs to one bakery lives under /api/bakeries/:bakeryId.
   app.use("/api/bakeries", productsRouter, builderRouter, stockRouter, bakeryOrdersRouter, bakeriesRouter);
 

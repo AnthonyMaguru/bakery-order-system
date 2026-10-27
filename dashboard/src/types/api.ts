@@ -45,6 +45,8 @@ export interface BakerySettings {
   customCakesPerDay: number
   customNoticeDays: number
   closedWeekdays: number[]
+  handoverTimes: string[]
+  occasions: string[]
 }
 
 export interface Member {

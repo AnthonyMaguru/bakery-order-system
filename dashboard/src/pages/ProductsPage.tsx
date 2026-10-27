@@ -5,6 +5,7 @@ import { useBakery } from '../context/bakery-context'
 import { useToast } from '../context/toast-context'
 import { useAsync } from '../hooks/useAsync'
 import { formatMoney } from '../lib/format'
+import { resolveImageUrl } from '../lib/image'
 import { PRODUCT_CATEGORIES, type Product, type ProductCategory } from '../types/api'
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -92,7 +93,7 @@ export function ProductsPage() {
                       <td>
                         <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
                           {p.imageUrl ? (
-                            <img src={p.imageUrl} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+                            <img src={resolveImageUrl(p.imageUrl)} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
                           ) : (
                             <span aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--sand)', flexShrink: 0 }} />
                           )}

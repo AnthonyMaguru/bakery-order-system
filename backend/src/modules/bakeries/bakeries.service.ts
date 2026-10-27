@@ -22,6 +22,9 @@ const publicFields = {
   acceptsCash: true,
   acceptsMobileMoney: true,
   mobileMoneyNumber: true,
+  customNoticeDays: true,
+  handoverTimes: true,
+  occasions: true,
 } as const;
 
 export const sameText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" }) === 0;
@@ -93,6 +96,12 @@ export async function updateSettings(bakeryId: string, data: BakerySettingsUpdat
   if (data.deliveryAreas) {
     data.deliveryAreas = data.deliveryAreas.filter((a, i, all) => all.findIndex((b) => sameText(a, b)) === i);
   }
+  if (data.handoverTimes) {
+    data.handoverTimes = [...new Set(data.handoverTimes.map((t) => t.trim()).filter(Boolean))].sort();
+  }
+  if (data.occasions) {
+    data.occasions = [...new Set(data.occasions.map((o) => o.trim()).filter(Boolean))];
+  }
   return prisma.bakery.update({ where: { id: bakeryId }, data });
 }
 
@@ -114,6 +123,9 @@ export function listMembers(bakeryId: string) {
 export async function addMember(bakeryId: string, email: string, role: "OWNER" | "STAFF") {
   const user = await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (!user) throw new HttpError(404, "No account uses that email. Ask them to sign in to the app once, then try again");
+  if (user.role === "ADMIN") {
+    throw badRequest("Platform administrators cannot be attached to a bakery. Admins are strictly independent.");
+  }
   try {
     return await prisma.bakeryMember.create({ data: { bakeryId, userId: user.id, role }, select: memberSelect });
   } catch (err) {

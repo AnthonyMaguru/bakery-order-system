@@ -10,7 +10,7 @@ import type { BakerySettings, Member, MemberRole } from '../types/api'
 
 type Form = Pick<
   BakerySettings,
-  'name' | 'phone' | 'address' | 'city' | 'about' | 'imageUrl' | 'deliveryAreas' | 'deliveryFee' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber'
+  'name' | 'phone' | 'address' | 'city' | 'about' | 'imageUrl' | 'deliveryAreas' | 'deliveryFee' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber' | 'handoverTimes' | 'occasions'
 >
 
 const fromSettings = (b: BakerySettings): Form => ({
@@ -20,12 +20,14 @@ const fromSettings = (b: BakerySettings): Form => ({
   city: b.city,
   about: b.about,
   imageUrl: b.imageUrl,
-  deliveryAreas: b.deliveryAreas,
+  deliveryAreas: b.deliveryAreas ?? [],
   deliveryFee: b.deliveryFee,
   pickupAvailable: b.pickupAvailable,
   acceptsCash: b.acceptsCash,
   acceptsMobileMoney: b.acceptsMobileMoney,
   mobileMoneyNumber: b.mobileMoneyNumber,
+  handoverTimes: b.handoverTimes ?? ['10:00', '14:00', '17:00'],
+  occasions: b.occasions ?? ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'],
 })
 
 export function SettingsPage() {
@@ -34,6 +36,8 @@ export function SettingsPage() {
   const [form, setForm] = useState<Form>(() => fromSettings(bakery))
   const [fee, setFee] = useState(String(bakery.deliveryFee))
   const [newArea, setNewArea] = useState('')
+  const [newTime, setNewTime] = useState('')
+  const [newOccasion, setNewOccasion] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,6 +52,24 @@ export function SettingsPage() {
     if (!area) return
     if (!form.deliveryAreas.some((a) => a.toLowerCase() === area.toLowerCase())) set('deliveryAreas', [...form.deliveryAreas, area])
     setNewArea('')
+  }
+
+  const addTime = () => {
+    const time = newTime.trim()
+    if (!time) return
+    if (!form.handoverTimes.includes(time)) {
+      set('handoverTimes', [...form.handoverTimes, time].sort())
+    }
+    setNewTime('')
+  }
+
+  const addOccasion = () => {
+    const occ = newOccasion.trim()
+    if (!occ) return
+    if (!form.occasions.some((o) => o.toLowerCase() === occ.toLowerCase())) {
+      set('occasions', [...form.occasions, occ])
+    }
+    setNewOccasion('')
   }
 
   const save = async () => {
@@ -149,6 +171,100 @@ export function SettingsPage() {
               <input type="checkbox" checked={form.pickupAvailable} onChange={(e) => set('pickupAvailable', e.target.checked)} disabled={disabled} />
               Customers can also pick up from the shop
             </label>
+          </div>
+        </section>
+
+        <section className="stack-lg" aria-labelledby="times-h">
+          <h2 id="times-h">Handover & Collection Times</h2>
+          <div className="stack">
+            <span id="times-label" className="strong small">
+              Time slots customers can choose from for pickup or delivery
+            </span>
+            <ul className="chips" aria-labelledby="times-label">
+              {form.handoverTimes.map((time) => (
+                <li key={time} className="chip">
+                  {time}
+                  {!disabled && (
+                    <button type="button" aria-label={`Remove ${time}`} onClick={() => set('handoverTimes', form.handoverTimes.filter((t) => t !== time))}>
+                      <Icon name="close" size={14} />
+                    </button>
+                  )}
+                </li>
+              ))}
+              {form.handoverTimes.length === 0 && <li className="muted">No time slots configured.</li>}
+            </ul>
+            {!disabled && (
+              <div className="row" style={{ maxWidth: 420 }}>
+                <label htmlFor="new-time" className="visually-hidden">
+                  New handover time
+                </label>
+                <input
+                  id="new-time"
+                  className="input"
+                  style={{ flex: 1 }}
+                  placeholder="e.g. 11:30 or 15:00"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTime()
+                    }
+                  }}
+                />
+                <button type="button" className="btn btn-outline" onClick={addTime}>
+                  Add time
+                </button>
+              </div>
+            )}
+            <span className="hint">These time slots appear as choices in the customer date & time picker.</span>
+          </div>
+        </section>
+
+        <section className="stack-lg" aria-labelledby="occasions-h">
+          <h2 id="occasions-h">Celebration Occasions</h2>
+          <div className="stack">
+            <span id="occasions-label" className="strong small">
+              Occasions you offer custom designs for
+            </span>
+            <ul className="chips" aria-labelledby="occasions-label">
+              {form.occasions.map((occ) => (
+                <li key={occ} className="chip">
+                  {occ}
+                  {!disabled && (
+                    <button type="button" aria-label={`Remove ${occ}`} onClick={() => set('occasions', form.occasions.filter((o) => o !== occ))}>
+                      <Icon name="close" size={14} />
+                    </button>
+                  )}
+                </li>
+              ))}
+              {form.occasions.length === 0 && <li className="muted">No celebration occasions configured.</li>}
+            </ul>
+            {!disabled && (
+              <div className="row" style={{ maxWidth: 420 }}>
+                <label htmlFor="new-occasion" className="visually-hidden">
+                  New occasion
+                </label>
+                <input
+                  id="new-occasion"
+                  className="input"
+                  style={{ flex: 1 }}
+                  placeholder="e.g. Anniversary or Baby shower"
+                  value={newOccasion}
+                  onChange={(e) => setNewOccasion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addOccasion()
+                    }
+                  }}
+                />
+                <button type="button" className="btn btn-outline" onClick={addOccasion}>
+                  Add occasion
+                </button>
+              </div>
+            )}
+            <span className="hint">Shown to customers as quick celebration chips when customizing their cakes.</span>
           </div>
         </section>
 

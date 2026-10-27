@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/bakery.dart';
 import '../../models/product.dart';
+import '../auth/auth.dart';
 import '../common/date_sheet.dart';
 import '../common/fulfilment_fields.dart';
 import '../orders/submit.dart';
@@ -44,6 +45,8 @@ class _QuickCheckoutScreenState extends State<QuickCheckoutScreen> {
   Future<void> _place() async {
     final problem = _due == null ? 'Choose when you need it' : fulfilmentProblem(_fulfilment, _area, _address.text);
     if (problem != null) return setState(() => _error = problem);
+    if (!await ensureSignedIn(context)) return;
+    if (!mounted) return;
     setState(() {
       _sending = true;
       _error = null;

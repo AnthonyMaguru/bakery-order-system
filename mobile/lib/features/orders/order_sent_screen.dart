@@ -101,51 +101,69 @@ class _ResultScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 64, 28, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(color: iconBackground, shape: BoxShape.circle),
-                child: Icon(icon, color: iconColour, size: 36),
-              ),
-              const SizedBox(height: 20),
-              Semantics(liveRegion: true, child: Text(title, style: Theme.of(context).textTheme.headlineMedium)),
-              const SizedBox(height: 10),
-              Text(lead, style: const TextStyle(fontSize: 17, height: 1.5, color: AppColors.ink2)),
-              const SizedBox(height: 10),
-              extra,
-              if (steps.isNotEmpty) ...[
-                const Divider(height: 40),
-                const Text('What happens next', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 14),
-                for (var i = 0; i < steps.length; i++)
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 48, 28, 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: (constraints.maxHeight - 68).clamp(0, double.infinity)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(color: iconBackground, shape: BoxShape.circle),
+                        child: Icon(icon, color: iconColour, size: 36),
+                      ),
+                      const SizedBox(height: 20),
+                      Semantics(liveRegion: true, child: Text(title, style: Theme.of(context).textTheme.headlineMedium)),
+                      const SizedBox(height: 10),
+                      Text(lead, style: const TextStyle(fontSize: 17, height: 1.5, color: AppColors.ink2)),
+                      const SizedBox(height: 10),
+                      extra,
+                      if (steps.isNotEmpty) ...[
+                        const Divider(height: 40),
+                        const Text('What happens next', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 14),
+                        for (var i = 0; i < steps.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFD9C7BB), width: 1.5)),
+                                  child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(child: Padding(padding: const EdgeInsets.only(top: 3), child: Text(steps[i]))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.only(top: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFD9C7BB), width: 1.5)),
-                          child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(child: Padding(padding: const EdgeInsets.only(top: 3), child: Text(steps[i]))),
+                        primary,
+                        const SizedBox(height: 10),
+                        Center(child: TextButton(onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst), child: const Text('Back to the bakery'))),
                       ],
                     ),
                   ),
-              ],
-              const Spacer(),
-              primary,
-              const SizedBox(height: 10),
-              Center(child: TextButton(onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst), child: const Text('Back to the bakery'))),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

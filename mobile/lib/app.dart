@@ -59,16 +59,7 @@ class _StartupGateState extends State<_StartupGate> {
             onComplete: () => setState(() => _completedDuringSession = true),
           );
         }
-        return StreamBuilder<User?>(
-          stream: firebaseReady
-              ? FirebaseAuth.instance.authStateChanges()
-              : Stream<User?>.value(null),
-          builder: (context, snapshot) {
-            final signedIn = snapshot.data != null;
-            if (firebaseReady && !signedIn) return const SignInScreen();
-            return const HomeShell();
-          },
-        );
+        return const HomeShell();
       },
     );
   }
