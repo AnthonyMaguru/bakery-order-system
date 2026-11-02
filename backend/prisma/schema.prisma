@@ -341,6 +341,7 @@ model Order {
 
   @@unique([customerId, clientRequestId])
   @@index([bakeryId, status, dueDate])
+  @@index([bakeryId, lastReminderAt])
   @@index([customerId])
 }
 
