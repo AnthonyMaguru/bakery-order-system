@@ -43,7 +43,11 @@ class _WhenStepState extends State<WhenStep> {
   void _continue() {
     _save();
     final problem = d.dueDate == null ? 'Choose when you need it' : fulfilmentProblem(_fulfilment, d.deliveryArea, _address.text);
-    if (problem != null) return setState(() => _error = problem);
+    if (problem != null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(problem)));
+      return setState(() => _error = problem);
+    }
     setState(() => _error = null);
     Navigator.of(context).push(MaterialPageRoute<void>(settings: const RouteSettings(name: 'custom/5'), builder: (_) => ReviewStep(draft: d)));
   }

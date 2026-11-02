@@ -30,8 +30,17 @@ class CustomOrderDraft {
   /// Inspiration photos, uploaded as soon as they're picked. The bytes are kept for previews.
   List<({Uint8List bytes, String url})> photos = [];
 
-  /// A picture of the builder preview, uploaded when the order is sent.
+  /// A picture of the cake design (builder preview or AI-generated design).
   String? designImageUrl;
+
+  /// Prompt used for OpenAI cake generation.
+  String? aiPrompt;
+
+  /// Raw image bytes from AI generation, kept so they can be uploaded to the bakery server.
+  Uint8List? aiImageBytes;
+
+  /// True when this cake was visualized or designed via AI Studio.
+  bool isAiDesigned = false;
 
   String inscription = '';
   String theme = '';
@@ -43,13 +52,21 @@ class CustomOrderDraft {
   String deliveryAddress = '';
   int? budget;
 
-  bool get hasChanges => groups.isNotEmpty || inscription.isNotEmpty || notes.isNotEmpty || flavour.isNotEmpty;
+  bool get hasChanges =>
+      groups.isNotEmpty ||
+      inscription.isNotEmpty ||
+      notes.isNotEmpty ||
+      flavour.isNotEmpty ||
+      (aiPrompt != null && aiPrompt!.isNotEmpty);
 
   int? get estimate => useBuilder && groups.isNotEmpty ? rules.estimate(groups, selection) : null;
 
   String get title => '$occasion cake';
 
   String get designSummary {
+    if (isAiDesigned && aiPrompt != null && aiPrompt!.trim().isNotEmpty) {
+      return 'AI Design: "${aiPrompt!.trim()}"';
+    }
     if (useBuilder && groups.isNotEmpty) return rules.describe(groups, selection);
     final parts = [flavour, size, colours].where((p) => p.trim().isNotEmpty).join(', ');
     return parts.isEmpty ? 'Described in your own words' : parts;
@@ -78,7 +95,7 @@ class CustomOrderDraft {
         'deliveryAddress': text(deliveryAddress),
       },
       if (photos.isNotEmpty) 'inspirationImageUrls': [for (final p in photos) p.url],
-      'designImageUrl': useBuilder ? designImageUrl : null,
+      'designImageUrl': designImageUrl,
       'optionIds': useBuilder ? [for (final o in rules.picked(groups, selection)) o.id] : <String>[],
       'items': [
         if (basedOn != null) {'productId': basedOn!.id, 'quantity': 1},

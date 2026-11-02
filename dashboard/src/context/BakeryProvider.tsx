@@ -1,5 +1,6 @@
 import { signOut } from 'firebase/auth'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
 import { getMe, getSettings } from '../api/bakeries'
 import { getOrdersSummary } from '../api/orders'
 import { listStock } from '../api/stock'
@@ -83,6 +84,9 @@ export function BakeryProvider({ children }: { children: ReactNode }) {
       </main>
     )
   }
+  if (me && me.role === 'ADMIN') {
+    return <Navigate to="/admin/overview" replace />
+  }
   if (me && !bakeryId) {
     return (
       <main className="main">
@@ -104,7 +108,7 @@ export function BakeryProvider({ children }: { children: ReactNode }) {
       value={{
         me,
         bakery,
-        isOwner: me.role === 'ADMIN' || membership?.memberRole === 'OWNER',
+        isOwner: membership?.memberRole === 'OWNER',
         ...counts,
         switchBakery,
         refreshBakery,

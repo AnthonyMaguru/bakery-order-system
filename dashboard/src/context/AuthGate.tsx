@@ -18,5 +18,5 @@ function FirebaseGate({ children }: { children: ReactNode }) {
   if (user === undefined) return <p className="loading main">Loading…</p>
   if (!user) return <Navigate to="/signin" replace />
   // Keyed on the user, so signing in as someone else reloads their bakery.
-  return <div key={user.uid}>{children}</div>
+  return <div key={user.uid} className="auth-gate-root">{children}</div>
 }

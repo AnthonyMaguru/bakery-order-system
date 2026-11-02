@@ -105,4 +105,42 @@ void main() {
     expect(body.containsKey('theme'), isFalse, reason: 'empty answers are left out');
     expect(draft.estimate, 110000);
   });
+
+  test('an AI custom cake draft preserves designImageUrl, aiPrompt, and description in toJson', () {
+    final draft = CustomOrderDraft(bakery: Bakery.fromJson(bakeryJson))
+      ..useBuilder = false
+      ..isAiDesigned = true
+      ..aiPrompt = 'Two-tier blush pink cake with gold leaf and fresh raspberries'
+      ..designImageUrl = 'http://10.0.2.2:4000/api/uploads/sample-ai-id'
+      ..flavour = 'Vanilla Cream'
+      ..dueDate = DateTime.utc(2026, 11, 10, 14)
+      ..fulfilment = 'PICKUP';
+
+    expect(draft.designSummary, 'AI Design: "Two-tier blush pink cake with gold leaf and fresh raspberries"');
+    final body = draft.toJson();
+    expect(body['type'], 'CUSTOM');
+    expect(body['designImageUrl'], 'http://10.0.2.2:4000/api/uploads/sample-ai-id');
+    expect(body['flavour'], 'Vanilla Cream');
+    expect(body['dueDate'], '2026-11-10T14:00:00.000Z');
+  });
+
+  test('Order parses designImageUrl and inspirationImageUrls', () {
+    final order = Order.fromJson({
+      'id': 'o-ai',
+      'number': 2001,
+      'type': 'CUSTOM',
+      'status': 'SUBMITTED',
+      'currency': 'UGX',
+      'dueDate': '2026-11-10T14:00:00.000Z',
+      'fulfilment': 'PICKUP',
+      'paymentStatus': 'UNPAID',
+      'amountPaid': 0,
+      'designImageUrl': 'http://10.0.2.2:4000/api/uploads/sample-ai-id',
+      'inspirationImageUrls': ['http://10.0.2.2:4000/api/uploads/inspire-1'],
+      'quotations': [],
+    });
+
+    expect(order.designImageUrl, 'http://10.0.2.2:4000/api/uploads/sample-ai-id');
+    expect(order.inspirationImageUrls, ['http://10.0.2.2:4000/api/uploads/inspire-1']);
+  });
 }

@@ -4,11 +4,14 @@ import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/bakery.dart';
 import '../../models/product.dart';
+import 'ai_cake_studio_step.dart';
 import 'builder_step.dart';
 import 'draft.dart';
 import 'personal_step.dart';
 
-const occasions = ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'];
+const defaultOccasions = ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'];
+
+enum _DesignMode { ai, builder, words }
 
 /// Step 1: what the cake is for, and how the customer wants to design it.
 class OccasionStep extends StatefulWidget {
@@ -27,6 +30,11 @@ class OccasionStep extends StatefulWidget {
 
 class _OccasionStepState extends State<OccasionStep> {
   CustomOrderDraft get d => widget.draft;
+  late _DesignMode _mode = widget.draft.isAiDesigned
+      ? _DesignMode.ai
+      : (widget.draft.useBuilder ? _DesignMode.builder : _DesignMode.words);
+
+  List<String> get _occasions => d.bakery.occasions.isNotEmpty ? d.bakery.occasions : defaultOccasions;
 
   Future<void> _confirmLeave() async {
     final leave = await showModalBottomSheet<bool>(
@@ -80,26 +88,46 @@ class _OccasionStepState extends State<OccasionStep> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final o in occasions) ChoiceChip(label: Text(o), selected: d.occasion == o, onSelected: (_) => setState(() => d.occasion = o)),
+                      for (final o in _occasions) ChoiceChip(label: Text(o), selected: d.occasion == o, onSelected: (_) => setState(() => d.occasion = o)),
                     ],
                   ),
                   if (d.basedOn == null) ...[
                     const SizedBox(height: 24),
                     const FieldLabel('How would you like to design it?'),
                     _Choice(
+                      icon: Icons.auto_awesome,
+                      title: '✨ Design with AI Studio',
+                      body: 'Describe your dream cake in plain words, let AI visualize it, and send the concept to the baker.',
+                      selected: _mode == _DesignMode.ai,
+                      onTap: () => setState(() {
+                        _mode = _DesignMode.ai;
+                        d.isAiDesigned = true;
+                        d.useBuilder = false;
+                      }),
+                    ),
+                    const SizedBox(height: 10),
+                    _Choice(
                       icon: Icons.layers_outlined,
                       title: 'Build it here',
                       body: 'Pick the shape, tiers, colours and decorations, and watch your cake take shape.',
-                      selected: d.useBuilder,
-                      onTap: () => setState(() => d.useBuilder = true),
+                      selected: _mode == _DesignMode.builder,
+                      onTap: () => setState(() {
+                        _mode = _DesignMode.builder;
+                        d.isAiDesigned = false;
+                        d.useBuilder = true;
+                      }),
                     ),
                     const SizedBox(height: 10),
                     _Choice(
                       icon: Icons.edit_note_outlined,
                       title: 'Describe it in your own words',
                       body: 'Already have an idea or a picture? Tell the bakery what you want.',
-                      selected: !d.useBuilder,
-                      onTap: () => setState(() => d.useBuilder = false),
+                      selected: _mode == _DesignMode.words,
+                      onTap: () => setState(() {
+                        _mode = _DesignMode.words;
+                        d.isAiDesigned = false;
+                        d.useBuilder = false;
+                      }),
                     ),
                     const SizedBox(height: 8),
                     Text('You can switch at any time. Nothing is sent until the last step.', style: Theme.of(context).textTheme.bodySmall),
@@ -123,11 +151,35 @@ class _OccasionStepState extends State<OccasionStep> {
         ),
         bottomNavigationBar: BottomBar(
           child: FilledButton(
-            onPressed: () => Navigator.of(context).push(
-              d.useBuilder
-                  ? MaterialPageRoute<void>(settings: const RouteSettings(name: 'custom/2'), builder: (_) => BuilderStep(draft: d))
-                  : MaterialPageRoute<void>(settings: const RouteSettings(name: 'custom/3'), builder: (_) => PersonalStep(draft: d)),
-            ),
+            onPressed: () {
+              switch (_mode) {
+                case _DesignMode.ai:
+                  d.isAiDesigned = true;
+                  d.useBuilder = false;
+                  Navigator.of(context).push(AiCakeStudioStep.route(d));
+                  break;
+                case _DesignMode.builder:
+                  d.isAiDesigned = false;
+                  d.useBuilder = true;
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      settings: const RouteSettings(name: 'custom/2'),
+                      builder: (_) => BuilderStep(draft: d),
+                    ),
+                  );
+                  break;
+                case _DesignMode.words:
+                  d.isAiDesigned = false;
+                  d.useBuilder = false;
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      settings: const RouteSettings(name: 'custom/3'),
+                      builder: (_) => PersonalStep(draft: d),
+                    ),
+                  );
+                  break;
+              }
+            },
             child: const Text('Continue'),
           ),
         ),

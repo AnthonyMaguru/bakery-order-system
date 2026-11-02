@@ -142,6 +142,10 @@ model Bakery {
   customNoticeDays   Int      @default(3)
   // ISO weekdays the bakery is closed: 1 is Monday, 7 is Sunday.
   closedWeekdays     Int[]    @default([])
+  // Times cakes can be handed over or delivered (e.g. "10:00", "14:00", "17:00").
+  handoverTimes      String[] @default(["10:00", "14:00", "17:00"])
+  // Celebration occasions the bakery caters to for custom orders.
+  occasions          String[] @default(["Birthday", "Wedding", "Introduction", "Graduation", "Baby shower", "Other"])
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

@@ -32,7 +32,7 @@ class NetworkException implements Exception {
 
 /// Every call to the backend goes through here. See docs/api.md for endpoints.
 class ApiClient {
-  ApiClient({http.Client? client, this.timeout = const Duration(seconds: 20)}) : _client = client ?? http.Client();
+  ApiClient({http.Client? client, this.timeout = const Duration(seconds: 45)}) : _client = client ?? http.Client();
 
   final http.Client _client;
   final Duration timeout;

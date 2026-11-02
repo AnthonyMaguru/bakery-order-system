@@ -18,4 +18,12 @@ describe("role access", () => {
 
     expect(next).toHaveBeenCalledOnce();
   });
+
+  it("does not allow an admin without bakery membership to pass isMember", async () => {
+    const { isMember } = await import("../src/lib/access.js");
+    const adminUser = { id: "admin-1", role: "ADMIN" } as never;
+    const member = await isMember(adminUser, "bakery-999");
+    expect(member).toBe(false);
+  });
 });
+

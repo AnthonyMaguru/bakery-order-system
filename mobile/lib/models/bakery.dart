@@ -18,6 +18,9 @@ class Bakery {
     this.mobileMoneyNumber,
     this.cakesFrom,
     this.nextCustomDate,
+    this.handoverTimes = const ['10:00', '14:00', '17:00'],
+    this.occasions = const ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'],
+    this.customNoticeDays = 3,
   });
 
   final String id;
@@ -40,7 +43,33 @@ class Bakery {
   /// "2026-10-20": the first day a new custom cake could be due.
   final String? nextCustomDate;
 
+  /// Time slots set by the bakery for collection or delivery (e.g. "09:00", "14:00").
+  final List<String> handoverTimes;
+
+  /// Celebration occasions offered by this bakery for custom designs.
+  final List<String> occasions;
+
+  /// Number of days notice required for custom bespoke cakes.
+  final int customNoticeDays;
+
   bool deliversTo(String area) => deliveryAreas.any((a) => a.toLowerCase() == area.toLowerCase());
+
+  /// Parses string time slots ("HH:MM") into (hour, minute) tuples for UI chips and pickers.
+  List<(int, int)> get parsedHandoverTimes {
+    if (handoverTimes.isEmpty) return const [(10, 0), (14, 0), (17, 0)];
+    final result = <(int, int)>[];
+    for (final t in handoverTimes) {
+      final parts = t.split(':');
+      if (parts.length == 2) {
+        final h = int.tryParse(parts[0]);
+        final m = int.tryParse(parts[1]);
+        if (h != null && m != null) {
+          result.add((h, m));
+        }
+      }
+    }
+    return result.isEmpty ? const [(10, 0), (14, 0), (17, 0)] : result;
+  }
 
   factory Bakery.fromJson(Map<String, dynamic> json) => Bakery(
         id: json['id'] as String,
@@ -60,6 +89,9 @@ class Bakery {
         mobileMoneyNumber: json['mobileMoneyNumber'] as String?,
         cakesFrom: json['cakesFrom'] as int?,
         nextCustomDate: json['nextCustomDate'] as String?,
+        handoverTimes: (json['handoverTimes'] as List?)?.cast<String>() ?? const ['10:00', '14:00', '17:00'],
+        occasions: (json['occasions'] as List?)?.cast<String>() ?? const ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'],
+        customNoticeDays: json['customNoticeDays'] as int? ?? 3,
       );
 }
 

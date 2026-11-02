@@ -11,7 +11,11 @@ const DAILY_LIMIT = 40;
 
 // Where clients fetch an upload from. PUBLIC_API_URL wins when the API sits behind a proxy.
 function uploadUrl(req: Request, id: string) {
-  const base = env.PUBLIC_API_URL ?? `${req.protocol}://${req.get("host")}/api`;
+  let host = req.get("host") || "localhost:4000";
+  if (host.includes("10.0.2.2")) {
+    host = `localhost:${process.env.PORT || 4000}`;
+  }
+  const base = env.PUBLIC_API_URL ?? `${req.protocol}://${host}/api`;
   return `${base.replace(/\/$/, "")}/uploads/${id}`;
 }
 
