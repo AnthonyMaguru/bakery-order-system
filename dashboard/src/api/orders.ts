@@ -17,8 +17,8 @@ export const getOrder = (id: string) => api<Order>(`/orders/${id}`)
 
 export const updateOrderStatus = (id: string, status: OrderStatus) => send<Order>('PATCH', `/orders/${id}/status`, { status })
 
-export const sendQuotation = (id: string, amount: number, note?: string) =>
-  send<Quotation>('POST', `/orders/${id}/quotations`, { amount, note: note || undefined })
+export const sendQuotation = (id: string, amount: number, deliveryAmount: number, note?: string) =>
+  send<Quotation>('POST', `/orders/${id}/quotations`, { amount, deliveryAmount, note: note || undefined })
 
 export const cancelOrder = (id: string, reason: string) => send<Order>('POST', `/orders/${id}/cancel`, { reason })
 

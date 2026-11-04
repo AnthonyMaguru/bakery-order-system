@@ -113,6 +113,7 @@ model User {
   comments    OrderComment[]
   payments    Payment[]
   uploads     Upload[]
+  reviews     BakeryReview[]
 }
 
 model Bakery {
@@ -123,6 +124,9 @@ model Bakery {
   phone              String?
   address            String?
   city               String
+  region             String   @default("Central Region")
+  municipality       String   @default("Kampala")
+  division           String?
   // ISO 3166 country code, used to keep customers to bakeries in their country.
   country            String   @default("UG")
   // ISO 4217 code. Fixed once the bakery has orders.
@@ -130,9 +134,6 @@ model Bakery {
   // Decides which calendar day an order's due time falls on.
   timezone           String   @default("Africa/Kampala")
   imageUrl           String?
-  // Neighbourhoods the bakery delivers to, e.g. "Ntinda".
-  deliveryAreas      String[]
-  deliveryFee        Int      @default(0)
   pickupAvailable    Boolean  @default(true)
   acceptsCash        Boolean  @default(true)
   acceptsMobileMoney Boolean  @default(true)
@@ -142,37 +143,43 @@ model Bakery {
   customNoticeDays   Int      @default(3)
   // ISO weekdays the bakery is closed: 1 is Monday, 7 is Sunday.
   closedWeekdays     Int[]    @default([])
-  // Times cakes can be handed over or delivered (e.g. "10:00", "14:00", "17:00").
-  handoverTimes      String[] @default(["10:00", "14:00", "17:00"])
+  // Optional start/end local times for the handover window, e.g. ["09:00", "17:00"].
+  handoverTimes      String[] @default([])
   // Celebration occasions the bakery caters to for custom orders.
   occasions          String[] @default(["Birthday", "Wedding", "Introduction", "Graduation", "Baby shower", "Other"])
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  members      BakeryMember[]
-  products     Product[]
-  optionGroups OptionGroup[]
-  stockItems   StockItem[]
-  blockedDates BlockedDate[]
-  orders       Order[]
-  application  BakeryApplication?
+  members       BakeryMember[]
+  products      Product[]
+  optionGroups  OptionGroup[]
+  stockItems    StockItem[]
+  blockedDates  BlockedDate[]
+  orders        Order[]
+  application   BakeryApplication?
+  deliveryZones DeliveryZone[]
+  reviews       BakeryReview[]
 }
 
 model BakeryApplication {
-  id          String                  @id @default(cuid())
-  bakeryName  String
-  contactName String
-  email       String
-  phone       String
-  city        String
-  notes       String?
-  status      BakeryApplicationStatus @default(PENDING)
-  bakeryId    String?                 @unique
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  id           String                  @id @default(cuid())
+  bakeryName   String
+  contactName  String
+  email        String
+  phone        String
+  city         String
+  region       String                  @default("Central Region")
+  municipality String                  @default("Kampala")
+  division     String?
+  notes        String?
+  status       BakeryApplicationStatus @default(PENDING)
+  bakeryId     String?                 @unique
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
 
-  bakery      Bakery?                 @relation(fields: [bakeryId], references: [id], onDelete: SetNull)
+  bakery Bakery? @relation(fields: [bakeryId], references: [id], onDelete: SetNull)
+
   @@index([status, createdAt])
   @@index([email])
 }
@@ -189,6 +196,29 @@ model BakeryMember {
 
   @@unique([bakeryId, userId])
   @@index([userId])
+}
+
+model DeliveryZone {
+  id           String   @id @default(cuid())
+  bakeryId     String
+  region       String
+  municipality String
+  division     String?
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  bakery Bakery  @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([bakeryId, region, municipality, division, name])
+  @@index([bakeryId, region, municipality])
+}
+
+model PlatformSettings {
+  id                String   @id @default("global")
+  commissionRateBps Int?
+  updatedAt         DateTime @updatedAt
 }
 
 // A day the bakery takes no orders, on top of its closed weekdays.
@@ -251,7 +281,7 @@ model Option {
   id          String   @id @default(cuid())
   groupId     String
   name        String
-  // Added to the estimate when picked. Sizes carry the base price.
+  // Used by bakery staff as quote guidance; never shown as a customer estimate.
   price       Int      @default(0)
   // Drawing hint for the app preview: "ROUND", "2", "#F5B8C9", "pearls".
   value       String?
@@ -290,45 +320,52 @@ model StockItem {
 }
 
 model Order {
-  id              String         @id @default(cuid())
+  id                   String        @id @default(cuid())
   // Short number for people, shown as BK1042.
-  number          Int            @unique @default(autoincrement())
+  number               Int           @unique @default(autoincrement())
   // Sent by the app so a retried submission after a dropped connection is not saved twice.
-  clientRequestId String?
+  clientRequestId      String?
   // Hash of the validated request body, preventing a reused id from binding a different order.
-  requestFingerprint String?
-  bakeryId        String
-  customerId      String
-  type            OrderType
-  status          OrderStatus    @default(SUBMITTED)
-  currency        String
-  occasion        String?
-  flavour         String?
-  icing           String?
-  size            String?
-  colours         String?
-  theme           String?
-  inscription     String?
-  notes           String?
-  budget          Int?
-  // Sum of the builder option prices when the order was placed.
-  estimate        Int?
-  // Known price: the catalogue total for ready-made orders, the accepted quote for the rest.
-  total           Int?
+  requestFingerprint   String?
+  bakeryId             String
+  customerId           String
+  type                 OrderType
+  status               OrderStatus   @default(SUBMITTED)
+  currency             String
+  occasion             String?
+  flavour              String?
+  icing                String?
+  size                 String?
+  colours              String?
+  theme                String?
+  inscription          String?
+  notes                String?
+  budget               Int?
+  // Confirmed price: catalogue subtotal for pickup orders or the accepted bakery quote.
+  total                Int?
+  commissionRateBps    Int?
+  commissionAmount     Int?
+  deliveryAmount       Int           @default(0)
   // Picture of the builder preview, uploaded by the app.
-  designImageUrl  String?
-  dueDate         DateTime
-  fulfilment      Fulfilment
-  deliveryArea    String?
-  deliveryAddress String?
-  deliveryFee     Int            @default(0)
-  paymentStatus   PaymentStatus  @default(UNPAID)
-  amountPaid      Int            @default(0)
-  cancelledBy     CancelledBy?
-  cancelReason    String?
-  lastReminderAt   DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  designImageUrl       String?
+  dueDate              DateTime
+  fulfilment           Fulfilment
+  deliveryZoneId       String?
+  deliveryRegion       String?
+  deliveryMunicipality String?
+  deliveryDivision     String?
+  deliveryZoneName     String?
+  deliveryAddress      String?
+  deliveryLandmark     String?
+  deliveryLatitude     Float?
+  deliveryLongitude    Float?
+  paymentStatus        PaymentStatus @default(UNPAID)
+  amountPaid           Int           @default(0)
+  cancelledBy          CancelledBy?
+  cancelReason         String?
+  lastReminderAt       DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   bakery     Bakery             @relation(fields: [bakeryId], references: [id])
   customer   User               @relation(fields: [customerId], references: [id])
@@ -338,11 +375,15 @@ model Order {
   quotations Quotation[]
   comments   OrderComment[]
   payments   Payment[]
+  review     BakeryReview?
+
+  deliveryZone DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
 
   @@unique([customerId, clientRequestId])
   @@index([bakeryId, status, dueDate])
   @@index([bakeryId, lastReminderAt])
   @@index([customerId])
+  @@index([deliveryZoneId])
 }
 
 model OrderItem {
@@ -383,16 +424,35 @@ model InspirationImage {
 }
 
 model Quotation {
-  id          String    @id @default(cuid())
-  orderId     String
-  amount      Int
-  note        String?
-  createdById String
-  acceptedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  orderId        String
+  amount         Int
+  deliveryAmount Int       @default(0)
+  note           String?
+  createdById    String
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
 
   order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdBy User  @relation(fields: [createdById], references: [id])
+}
+
+model BakeryReview {
+  id         String   @id @default(cuid())
+  bakeryId   String
+  customerId String
+  orderId    String   @unique
+  rating     Int
+  body       String?
+  response   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  bakery   Bakery @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
+  customer User   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([bakeryId, createdAt])
 }
 
 // MVP substitute for in-app messaging: a simple notes thread per order.

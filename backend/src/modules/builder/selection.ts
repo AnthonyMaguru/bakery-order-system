@@ -53,6 +53,5 @@ export function resolveSelections(groups: BuilderGroup[], optionIds: string[]) {
   }
 
   const selections = [...chosen.values()].flat();
-  const estimate = selections.reduce((sum, s) => sum + s.price, 0);
-  return { selections, estimate };
+  return selections;
 }

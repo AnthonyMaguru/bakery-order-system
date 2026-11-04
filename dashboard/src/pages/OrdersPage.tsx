@@ -155,7 +155,7 @@ function OrdersTable({ orders }: { orders: OrderSummary[] }) {
                     )}
                   </div>
                   <div className="sub">
-                    BK{o.number} · {TYPE_LABELS[o.type]} · {o.fulfilment === 'PICKUP' ? 'Pickup' : `Delivery, ${o.deliveryArea ?? ''}`}
+                    BK{o.number} · {TYPE_LABELS[o.type]} · {o.fulfilment === 'PICKUP' ? 'Pickup' : `Delivery, ${o.deliveryZoneName ?? ''}`}
                   </div>
                 </td>
                 <td>

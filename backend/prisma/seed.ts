@@ -101,8 +101,13 @@ async function seedSweetCrumbs() {
       phone: "0772 000 000",
       address: "Kisaasi Road, Kampala",
       city: "Kampala",
-      deliveryAreas: ["Kisaasi", "Ntinda", "Kyanja", "Bukoto", "Naalya"],
-      deliveryFee: 5000,
+      deliveryZones: {
+        create: ["Kisaasi", "Ntinda", "Kyanja", "Bukoto", "Naalya"].map((name) => ({
+          region: "Central Region",
+          municipality: "Kampala",
+          name,
+        })),
+      },
       mobileMoneyNumber: "0772 000 000",
       customCakesPerDay: 4,
       customNoticeDays: 4,
@@ -172,8 +177,13 @@ async function seedMamasOven() {
       about: "Home style cakes and bread",
       city: "Kampala",
       address: "Bukoto, Kampala",
-      deliveryAreas: ["Bukoto", "Ntinda", "Kamwokya"],
-      deliveryFee: 7000,
+      deliveryZones: {
+        create: ["Bukoto", "Ntinda", "Kamwokya"].map((name) => ({
+          region: "Central Region",
+          municipality: "Kampala",
+          name,
+        })),
+      },
       customCakesPerDay: 2,
       customNoticeDays: 7,
       handoverTimes: ["10:00", "13:00", "16:00"],

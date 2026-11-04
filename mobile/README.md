@@ -25,8 +25,8 @@ If you use FlutterFire, `flutterfire configure` will generate the platform confi
 ## What customers can do
 
 - **Find a bakery.** With one bakery (the pilot) the app opens it straight away. With more, customers choose their area and see the bakeries that deliver there, soonest available first.
-- **Order a ready made cake.** Product, quick checkout, done. The price is known, so there is no quote.
-- **Design a cake in 5 steps.** The builder uses the bakery's own options and prices (out of stock options never appear), draws the cake as they choose, and shows an estimate. Or they describe it in their own words instead.
+- **Order a ready made cake.** Pickup uses the listed product price. For delivery, the bakery confirms the delivery amount in its quote.
+- **Design a cake in 5 steps.** The builder uses the bakery's options (out of stock options never appear) and draws the cake as customers choose. It does not show estimated prices; the bakery sends the quote. Or customers describe it in their own words instead.
 - **Pick a date that works.** The date picker only offers days the bakery can still take the order.
 - **Accept the quote, pay, follow progress, message the bakery, or cancel** while the bakery hasn't started.
 
@@ -34,10 +34,10 @@ If you use FlutterFire, `flutterfire configure` will generate the platform confi
 
 Built for networks that come and go:
 
-- **Orders are never lost.** If an order can't be sent, it is saved on the phone and sent by itself when the app comes back to the foreground, every 30 seconds while something is waiting, and on the next launch. See `features/outbox/outbox.dart`.
+- **Orders are never lost.** Orders and their selected photos are saved per signed-in account on the phone, then retried when the app comes back to the foreground, every 30 seconds while something is waiting, and on the next launch. Photos upload before the order and successful uploads are recorded so retries don't needlessly repeat them. See `features/outbox/outbox.dart`.
 - **Orders are never sent twice.** Each order gets an id (`clientRequestId`) made on the phone; resending it returns the order the backend already saved.
 - **Menus still show offline.** Bakeries, products and builder options are kept from the last visit (`core/cache.dart`), with a banner saying so.
-- **Clear about what happened.** "Saved on your phone", "Waiting to send", or the bakery's reason if it refused the order.
+- **Clear about what happened.** "Saved on your phone", "Waiting to send", or the bakery's reason if it refused the order; refused orders can be retried after the customer addresses the issue.
 
 ## Layout
 
@@ -58,12 +58,12 @@ test/
 ├── rules_test.dart          Builder rules, formatting, request ids
 ├── outbox_test.dart         Offline saving and sending, with a fake backend
 ├── models_and_draft_test.dart
-├── builder_step_test.dart   The builder screen updates the estimate
+├── builder_step_test.dart   The builder screen records choices without estimates
 ├── api_contract_test.dart   Parses real backend responses in test/fixtures
 └── fixtures/
 ```
 
-Rules that decide things are plain Dart so they're easy to test: `builder_rules.dart` matches the backend's rules for builder choices and estimates.
+Rules that decide things are plain Dart so they're easy to test: `builder_rules.dart` matches the backend's builder-choice rules.
 
 ## Release builds
 

@@ -42,13 +42,15 @@ Errors always look like `{ "error": "message" }`, with `details` added for valid
 ## How orders work
 
 ```
-Ready made (STANDARD):   SUBMITTED → CONFIRMED → PREPARING → READY → COMPLETED
-Custom and BULK:         SUBMITTED → QUOTED → CONFIRMED → PREPARING → READY → COMPLETED
-                         (any open order can be CANCELLED)
+Ready made pickup (STANDARD):   SUBMITTED → CONFIRMED → PREPARING → READY → COMPLETED
+Delivery and custom orders:     SUBMITTED → QUOTED → CONFIRMED → PREPARING → READY → COMPLETED
+                                (any open order can be CANCELLED)
 ```
 
-- **Ready made** orders are priced straight away (`total` = products plus delivery fee). Staff confirm them.
-- **Custom and bulk** orders get an `estimate` from the builder prices. Staff send a quote, the order becomes `QUOTED`, and it is only `CONFIRMED` when the **customer accepts** the latest quote. `total` is then the accepted amount.
+- **Ready made pickup** orders use the listed product prices and staff confirm them.
+- **Delivery** orders have no preset delivery fee. The bakery quotes the full price and delivery amount; the customer accepts the latest quote before the order is confirmed.
+- **Custom and bulk** orders have no customer-facing price estimate. The bakery determines and quotes the final price; the customer accepts the latest quote before confirmation.
+- The platform charges bakeries a configurable commission on completed order subtotals, excluding delivery and taxes. Customers are not charged a platform fee; cancelled orders accrue no commission. Commission cannot accrue until the platform rate is configured.
 - Staff move a confirmed order forward one step at a time.
 - Customers can cancel until the bakery starts making the cake (`PREPARING`). Staff can cancel any open order, and must give a reason.
 - **Capacity:** each custom or bulk order uses one of the bakery's daily slots on its due day. Closed weekdays, blocked dates, days within the notice period and full days are refused with 409. Ready made orders only need the product's `leadTimeDays` and an open day.
@@ -77,8 +79,10 @@ Applications do not create a public bakery immediately. After review, the platfo
 | GET | `/bakeries/:bakeryId/products?category=CAKE` | Products customers can order |
 | GET | `/bakeries/:bakeryId/products/:productId` | One product |
 | GET | `/bakeries/:bakeryId/builder?category=CAKE` | Cake builder groups and the options customers can pick right now |
+| GET | `/bakeries/:bakeryId/reviews` | Recent verified reviews and bakery responses |
+| GET | `/bakeries/:bakeryId/reviews/summary` | Average rating and verified review count |
 
-A bakery in the list includes `cakesFrom` (cheapest cake) and `nextCustomDate` (first day a custom cake could be due).
+A bakery in the list includes `cakesFrom` (cheapest ready-made cake), `nextCustomDate`, delivery zones, and review summary fields.
 
 Availability returns one entry per day:
 
@@ -94,7 +98,7 @@ The builder returns groups in display order. Options whose linked stock has run 
 [
   {
     "id": "grp_…", "kind": "DECORATION", "name": "Decorations", "multiple": true, "required": false,
-    "options": [{ "id": "opt_…", "name": "Pearls", "price": 10000, "value": "pearls", "serves": null, "imageUrl": null }]
+    "options": [{ "id": "opt_…", "name": "Pearls", "value": "pearls", "serves": null, "imageUrl": null }]
   }
 ]
 ```
@@ -111,11 +115,12 @@ The builder returns groups in display order. Options whose linked stock has run 
 | POST | `/orders/:id/accept-quote` | customer | `{ "quotationId": "…" }`, the latest quote. 409 if the bakery has sent a newer one |
 | POST | `/orders/:id/cancel` | customer or staff | `{ "reason": "…" }`, required for staff |
 | PATCH | `/orders/:id/status` | staff | `{ "status": "PREPARING" }`, the next step only |
-| POST | `/orders/:id/quotations` | staff | `{ "amount": 165000, "note": "…" }`. Sets the order to `QUOTED` |
+| POST | `/orders/:id/quotations` | staff | `{ "amount": 165000, "deliveryAmount": 5000, "note": "…" }`. Sets the order to `QUOTED`; deliveryAmount is part of the total and excluded from commission |
 | POST | `/orders/:id/payments` | staff | `{ "amount": 80000, "method": "MOBILE_MONEY", "note": "…" }` |
 | DELETE | `/orders/:id/payments/:paymentId` | staff | Remove a payment entered by mistake |
 | GET | `/orders/:id/comments` | customer or staff | Messages, oldest first. `fromBakery` marks the bakery's |
 | POST | `/orders/:id/comments` | customer or staff | `{ "body": "Can the writing be gold?" }` |
+| POST | `/orders/:id/review` | customer | Submit one 1–5 star review after completion, with optional text |
 
 #### `POST /orders` body
 
@@ -133,8 +138,9 @@ Only `bakeryId`, `type`, `dueDate` and `fulfilment` are always required, so a cu
   "budget": 120000,
   "dueDate": "2026-11-07T14:00:00+03:00",
   "fulfilment": "DELIVERY",
-  "deliveryArea": "Ntinda",
+  "deliveryZoneId": "zone_…",
   "deliveryAddress": "Plot 12, Ntinda",
+  "deliveryLandmark": "Opposite the community centre",
   "optionIds": ["opt_round", "opt_2tiers", "opt_2kg", "opt_vanilla", "opt_pink", "opt_pearls"],
   "designImageUrl": "https://firebasestorage.googleapis.com/…",
   "items": [],
@@ -144,7 +150,7 @@ Only `bakeryId`, `type`, `dueDate` and `fulfilment` are always required, so a cu
 
 - `type`: `STANDARD` (ready made, needs `items`, no `optionIds`), `CUSTOM` or `BULK`.
 - `clientRequestId`: make a new random id (a UUID) for each order the customer places, and **keep it when retrying**. If the phone lost its connection and sends the order again, the API returns the first order instead of saving a second one.
-- `deliveryArea` must be one of the bakery's `deliveryAreas`. `DELIVERY` also needs `deliveryAddress`.
+- `deliveryZoneId` must identify one of the bakery's structured delivery zones. `DELIVERY` also needs `deliveryAddress`; landmark and coordinates are optional.
 - `optionIds` come from the builder. Only one option per group unless the group is `multiple`, and required groups need a choice.
 - `items` with a customisable product on a `CUSTOM` order means "based on this cake".
 - `designImageUrl` is a picture of the builder preview. Upload photos with `POST /uploads` first and send their URLs, at most 5 inspiration photos per order.
@@ -180,7 +186,8 @@ All need a signed in member of the bakery. **Owner** means `OWNER` only.
 | GET | `/bakeries/:bakeryId/orders?status=&from=&to=&q=` | The bakery's orders, soonest due first. `q` searches customer name, phone or `BK1043` |
 | GET | `/bakeries/:bakeryId/orders/summary` | `{ counts: { SUBMITTED: 2, … }, needsAttention: 2 }`: open orders due within 48 hours and untouched for a day |
 | GET | `/bakeries/:bakeryId/settings` | All settings, including capacity rules |
-| PATCH | `/bakeries/:bakeryId` | Owner. Profile, `deliveryAreas`, `deliveryFee`, `pickupAvailable`, payment methods, `customCakesPerDay`, `customNoticeDays`, `closedWeekdays` (1 is Monday, 7 is Sunday) |
+| PATCH | `/bakeries/:bakeryId` | Owner. Profile, structured `deliveryZones`, pickup availability, payment methods, `customCakesPerDay`, `customNoticeDays`, `closedWeekdays` (1 is Monday, 7 is Sunday) |
+| POST | `/bakeries/:bakeryId/reviews/:reviewId/response` | Member. `{ "response": "…" }`, visible publicly with the review |
 | GET | `/bakeries/:bakeryId/products?all=true` | Includes hidden products |
 | POST | `/bakeries/:bakeryId/products` | `{ name, category, price, description?, sizeLabel?, serves?, leadTimeDays?, customisable?, imageUrl? }` |
 | PATCH | `/bakeries/:bakeryId/products/:productId` | Any of those fields, or `{ "isActive": false }` to hide |

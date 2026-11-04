@@ -27,8 +27,8 @@ class CustomOrderDraft {
   String size = '';
   String colours = '';
 
-  /// Inspiration photos, uploaded as soon as they're picked. The bytes are kept for previews.
-  List<({Uint8List bytes, String url})> photos = [];
+  /// Inspiration photos stay on-device until their order is sent.
+  List<({Uint8List bytes, String url, String contentType})> photos = [];
 
   /// A picture of the cake design (builder preview or AI-generated design).
   String? designImageUrl;
@@ -48,8 +48,9 @@ class CustomOrderDraft {
 
   DateTime? dueDate;
   String fulfilment = 'DELIVERY';
-  String? deliveryArea;
+  String? deliveryZoneId;
   String deliveryAddress = '';
+  String deliveryLandmark = '';
   int? budget;
 
   bool get hasChanges =>
@@ -58,8 +59,6 @@ class CustomOrderDraft {
       notes.isNotEmpty ||
       flavour.isNotEmpty ||
       (aiPrompt != null && aiPrompt!.isNotEmpty);
-
-  int? get estimate => useBuilder && groups.isNotEmpty ? rules.estimate(groups, selection) : null;
 
   String get title => '$occasion cake';
 
@@ -91,10 +90,12 @@ class CustomOrderDraft {
       'dueDate': dueDate!.toUtc().toIso8601String(),
       'fulfilment': fulfilment,
       if (fulfilment == 'DELIVERY') ...{
-        'deliveryArea': deliveryArea,
+        'deliveryZoneId': deliveryZoneId,
         'deliveryAddress': text(deliveryAddress),
+        'deliveryLandmark': text(deliveryLandmark),
       },
-      if (photos.isNotEmpty) 'inspirationImageUrls': [for (final p in photos) p.url],
+      if (photos.any((photo) => photo.url.isNotEmpty))
+        'inspirationImageUrls': [for (final photo in photos) if (photo.url.isNotEmpty) photo.url],
       'designImageUrl': designImageUrl,
       'optionIds': useBuilder ? [for (final o in rules.picked(groups, selection)) o.id] : <String>[],
       'items': [

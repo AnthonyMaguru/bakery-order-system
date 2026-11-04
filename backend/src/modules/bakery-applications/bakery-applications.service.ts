@@ -1,4 +1,4 @@
-import { notFound } from "../../lib/http-error.js";
+import { badRequest, conflict, notFound } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import type { BakeryApplicationInput } from "./bakery-applications.schemas.js";
 
@@ -35,6 +35,9 @@ function baseSlug(name: string) {
 export async function onboardApplication(id: string) {
   const application = await prisma.bakeryApplication.findUnique({ where: { id } });
   if (!application) throw notFound("Bakery application");
+  if (application.status !== "APPROVED" && !application.bakeryId) {
+    throw conflict("Approve the bakery application before onboarding");
+  }
   if (application.bakeryId) {
     return prisma.bakery.findUniqueOrThrow({ where: { id: application.bakeryId } });
   }
@@ -43,6 +46,16 @@ export async function onboardApplication(id: string) {
     const existing = await tx.bakeryApplication.findUnique({ where: { id } });
     if (!existing) throw notFound("Bakery application");
     if (existing.bakeryId) return tx.bakery.findUniqueOrThrow({ where: { id: existing.bakeryId } });
+    if (existing.status !== "APPROVED") throw conflict("Approve the bakery application before onboarding");
+
+    const owner = await tx.user.findFirst({
+      where: { email: { equals: existing.email, mode: "insensitive" } },
+      select: { id: true, role: true },
+    });
+    if (!owner) {
+      throw badRequest("The applicant must create an account with the application email before onboarding");
+    }
+    if (owner.role === "ADMIN") throw badRequest("A platform administrator cannot own a bakery");
 
     const slugRoot = baseSlug(existing.bakeryName);
     let slug = slugRoot;
@@ -54,13 +67,14 @@ export async function onboardApplication(id: string) {
         slug,
         name: existing.bakeryName,
         city: existing.city,
+        region: existing.region,
+        municipality: existing.municipality,
+        division: existing.division,
+        country: "UG",
         phone: existing.phone,
       },
     });
-    const owner = await tx.user.findFirst({ where: { email: { equals: existing.email, mode: "insensitive" } }, select: { id: true } });
-    if (owner) {
-      await tx.bakeryMember.create({ data: { bakeryId: bakery.id, userId: owner.id, role: "OWNER" } });
-    }
+    await tx.bakeryMember.create({ data: { bakeryId: bakery.id, userId: owner.id, role: "OWNER" } });
     await tx.bakeryApplication.update({
       where: { id },
       data: { bakeryId: bakery.id, status: "APPROVED" },

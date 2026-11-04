@@ -9,6 +9,9 @@ const initialForm: BakeryApplicationInput = {
   email: '',
   phone: '',
   city: '',
+  region: '',
+  municipality: '',
+  division: '',
   notes: '',
 }
 
@@ -38,7 +41,7 @@ export function ApplicationPage() {
   return (
     <main className="application-shell">
       <nav className="marketing-nav">
-        <Link className="wordmark" to="/">Crumb & Co.</Link>
+        <Link className="wordmark" to="/"><img src="/app_logo.png" alt="" className="brand-logo" />Crumb &amp; Co.</Link>
         <Link className="text-link" to="/">Back to home <span aria-hidden="true">↗</span></Link>
       </nav>
       <div className="application-layout">
@@ -48,6 +51,10 @@ export function ApplicationPage() {
             Share a little about your bakery and the kind of orders you want to grow.
             We’ll review your application, then contact you before anything goes live.
           </p>
+          <aside className="application-aside">
+            <strong>Partner pricing</strong>
+            <p>A one-time setup fee of UGX 70,000 applies after approval. A configurable commission applies only to completed order subtotals; customers pay no platform fee. We disclose the commission rate before onboarding.</p>
+          </aside>
         </div>
         <div className="application-form-panel">
           {submitted ? (
@@ -80,10 +87,26 @@ export function ApplicationPage() {
                   <input className="input" type="tel" required value={form.phone} onChange={(e) => update('phone', e.target.value)} />
                 </label>
               </div>
-              <label className="field">
-                City
-                <input className="input" required value={form.city} onChange={(e) => update('city', e.target.value)} />
-              </label>
+              <div className="form-two">
+                <label className="field">
+                  City or town
+                  <input className="input" required value={form.city} onChange={(e) => update('city', e.target.value)} />
+                </label>
+                <label className="field">
+                  Region
+                  <input className="input" required value={form.region} onChange={(e) => update('region', e.target.value)} placeholder="For example Central Region" />
+                </label>
+              </div>
+              <div className="form-two">
+                <label className="field">
+                  Municipality or district
+                  <input className="input" required value={form.municipality} onChange={(e) => update('municipality', e.target.value)} />
+                </label>
+                <label className="field">
+                  Division or sub-county <span className="optional">(optional)</span>
+                  <input className="input" value={form.division ?? ''} onChange={(e) => update('division', e.target.value)} />
+                </label>
+              </div>
               <label className="field">
                 Tell us about your bakery <span className="optional">(optional)</span>
                 <textarea rows={4} value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="What do you bake, and what would you love help with?" />
@@ -93,6 +116,7 @@ export function ApplicationPage() {
                 {saving ? 'Sending application…' : 'Send application'}
               </button>
               <p className="small muted">No public listing is created until we have spoken with you.</p>
+              <p className="small muted">We use your contact details and location only to review this application and help set up your bakery. Read our <Link to="/privacy">privacy notice</Link>.</p>
             </form>
           )}
         </div>

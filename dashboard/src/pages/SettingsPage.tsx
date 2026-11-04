@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { addMember, listMembers, removeMember, updateSettings } from '../api/bakeries'
+import { addMember, getCommissionSummary, listMembers, removeMember, updateSettings } from '../api/bakeries'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { PhotoField } from '../components/PhotoField'
 import { Icon } from '../components/Icon'
@@ -8,59 +8,59 @@ import { useToast } from '../context/toast-context'
 import { useAsync } from '../hooks/useAsync'
 import type { BakerySettings, Member, MemberRole } from '../types/api'
 
-type Form = Pick<
+type Form = Omit<Pick<
   BakerySettings,
-  'name' | 'phone' | 'address' | 'city' | 'about' | 'imageUrl' | 'deliveryAreas' | 'deliveryFee' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber' | 'handoverTimes' | 'occasions'
->
+  'name' | 'phone' | 'address' | 'city' | 'about' | 'imageUrl' | 'deliveryZones' | 'pickupAvailable' | 'acceptsCash' | 'acceptsMobileMoney' | 'mobileMoneyNumber' | 'handoverTimes' | 'occasions'
+>, 'handoverTimes'> & {
+  handoverStart: string
+  handoverEnd: string
+}
 
-const fromSettings = (b: BakerySettings): Form => ({
-  name: b.name,
-  phone: b.phone,
-  address: b.address,
-  city: b.city,
-  about: b.about,
-  imageUrl: b.imageUrl,
-  deliveryAreas: b.deliveryAreas ?? [],
-  deliveryFee: b.deliveryFee,
-  pickupAvailable: b.pickupAvailable,
-  acceptsCash: b.acceptsCash,
-  acceptsMobileMoney: b.acceptsMobileMoney,
-  mobileMoneyNumber: b.mobileMoneyNumber,
-  handoverTimes: b.handoverTimes ?? ['10:00', '14:00', '17:00'],
-  occasions: b.occasions ?? ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'],
-})
+const fromSettings = (b: BakerySettings): Form => {
+  const times = [...(b.handoverTimes ?? [])].sort()
+  return {
+    name: b.name,
+    phone: b.phone,
+    address: b.address,
+    city: b.city,
+    about: b.about,
+    imageUrl: b.imageUrl,
+    deliveryZones: b.deliveryZones ?? [],
+    pickupAvailable: b.pickupAvailable,
+    acceptsCash: b.acceptsCash,
+    acceptsMobileMoney: b.acceptsMobileMoney,
+    mobileMoneyNumber: b.mobileMoneyNumber,
+    handoverStart: times[0] ?? '',
+    handoverEnd: times.at(-1) ?? '',
+    occasions: b.occasions ?? ['Birthday', 'Wedding', 'Introduction', 'Graduation', 'Baby shower', 'Other'],
+  }
+}
 
 export function SettingsPage() {
   const { bakery, isOwner, refreshBakery } = useBakery()
   const toast = useToast()
   const [form, setForm] = useState<Form>(() => fromSettings(bakery))
-  const [fee, setFee] = useState(String(bakery.deliveryFee))
-  const [newArea, setNewArea] = useState('')
-  const [newTime, setNewTime] = useState('')
+  const [zone, setZone] = useState({ region: bakery.region, municipality: bakery.municipality, division: '', name: '' })
   const [newOccasion, setNewOccasion] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const original = fromSettings(bakery)
-  const current = { ...form, deliveryFee: Number(fee.replaceAll(',', '')) }
+  const current = form
   const changed = (Object.keys(original) as (keyof Form)[]).filter((k) => JSON.stringify(original[k]) !== JSON.stringify(current[k]))
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }))
   const disabled = !isOwner
 
-  const addArea = () => {
-    const area = newArea.trim()
-    if (!area) return
-    if (!form.deliveryAreas.some((a) => a.toLowerCase() === area.toLowerCase())) set('deliveryAreas', [...form.deliveryAreas, area])
-    setNewArea('')
-  }
-
-  const addTime = () => {
-    const time = newTime.trim()
-    if (!time) return
-    if (!form.handoverTimes.includes(time)) {
-      set('handoverTimes', [...form.handoverTimes, time].sort())
+  const addZone = () => {
+    const next = { ...zone, region: zone.region.trim(), municipality: zone.municipality.trim(), division: zone.division.trim() || null, name: zone.name.trim() }
+    if (!next.region || !next.municipality || !next.name) return setError('Enter the region, municipality and neighborhood or delivery zone')
+    const key = [next.region, next.municipality, next.division ?? '', next.name].join('|').toLowerCase()
+    if (form.deliveryZones.some((item) => [item.region, item.municipality, item.division ?? '', item.name].join('|').toLowerCase() === key)) {
+      return setError('That delivery zone is already listed')
     }
-    setNewTime('')
+    set('deliveryZones', [...form.deliveryZones, next])
+    setZone((value) => ({ ...value, name: '' }))
+    setError(null)
   }
 
   const addOccasion = () => {
@@ -73,12 +73,30 @@ export function SettingsPage() {
   }
 
   const save = async () => {
-    if (!Number.isInteger(current.deliveryFee) || current.deliveryFee < 0) return setError('The delivery fee must be a whole number')
     if (!current.name.trim()) return setError('The bakery needs a name')
+    if (
+      (current.handoverStart || current.handoverEnd) &&
+      (!current.handoverStart ||
+        !current.handoverEnd ||
+        current.handoverStart >= current.handoverEnd)
+    ) {
+      return setError('Set both handover times, with the end later than the start.')
+    }
     setSaving(true)
     setError(null)
     try {
-      await updateSettings(bakery.id, Object.fromEntries(changed.map((k) => [k, current[k]])))
+      const timeWindowChanged = changed.some((key) => key === 'handoverStart' || key === 'handoverEnd')
+      const update = Object.fromEntries(
+        changed
+          .filter((key) => key !== 'handoverStart' && key !== 'handoverEnd')
+          .map((key) => [key, current[key]]),
+      )
+      if (timeWindowChanged) {
+        update.handoverTimes = current.handoverStart && current.handoverEnd
+          ? [current.handoverStart, current.handoverEnd]
+          : []
+      }
+      await updateSettings(bakery.id, update)
       refreshBakery()
       toast('Settings saved. Customers see the changes straight away.')
     } catch (e) {
@@ -89,7 +107,7 @@ export function SettingsPage() {
   }
 
   const describeChanges = () => {
-    const labels: Partial<Record<keyof Form, string>> = { deliveryFee: 'the delivery fee', deliveryAreas: 'the delivery areas', name: 'the name', imageUrl: 'the photo' }
+    const labels: Partial<Record<keyof Form, string>> = { deliveryZones: 'delivery coverage', name: 'the name', imageUrl: 'the photo', handoverStart: 'handover hours', handoverEnd: 'handover hours' }
     if (changed.length === 1) return `You changed ${labels[changed[0]!] ?? 'a setting'}.`
     return `You changed ${changed.length} settings.`
   }
@@ -121,52 +139,33 @@ export function SettingsPage() {
           <h2 id="delivery-h">Delivery</h2>
           <div className="stack">
             <span id="areas-label" className="strong small">
-              Areas you deliver to
+              Delivery zones
             </span>
             <ul className="chips" aria-labelledby="areas-label">
-              {form.deliveryAreas.map((area) => (
-                <li key={area} className="chip">
-                  {area}
+              {form.deliveryZones.map((area, index) => (
+                <li key={`${area.region}-${area.municipality}-${area.name}-${index}`} className="chip">
+                  {[area.name, area.division, area.municipality, area.region].filter(Boolean).join(' · ')}
                   {!disabled && (
-                    <button type="button" aria-label={`Remove ${area}`} onClick={() => set('deliveryAreas', form.deliveryAreas.filter((a) => a !== area))}>
+                    <button type="button" aria-label={`Remove ${area.name}`} onClick={() => set('deliveryZones', form.deliveryZones.filter((_, i) => i !== index))}>
                       <Icon name="close" size={14} />
                     </button>
                   )}
                 </li>
               ))}
-              {form.deliveryAreas.length === 0 && <li className="muted">No delivery areas. Customers can only pick up.</li>}
+              {form.deliveryZones.length === 0 && <li className="muted">No delivery zones. Customers can only pick up.</li>}
             </ul>
             {!disabled && (
-              <div className="row" style={{ maxWidth: 420 }}>
-                <label htmlFor="new-area" className="visually-hidden">
-                  New delivery area
-                </label>
-                <input
-                  id="new-area"
-                  className="input"
-                  style={{ flex: 1 }}
-                  placeholder="Add an area, for example Kira"
-                  value={newArea}
-                  onChange={(e) => setNewArea(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addArea()
-                    }
-                  }}
-                />
-                <button type="button" className="btn btn-outline" onClick={addArea}>
-                  Add
-                </button>
+              <div className="grid-2">
+                <Text id="zone-region" label="Region" value={zone.region} onChange={(v) => setZone((z) => ({ ...z, region: v }))} />
+                <Text id="zone-municipality" label="Municipality or city" value={zone.municipality} onChange={(v) => setZone((z) => ({ ...z, municipality: v }))} />
+                <Text id="zone-division" label="Division or sub-county · optional" value={zone.division} onChange={(v) => setZone((z) => ({ ...z, division: v }))} />
+                <Text id="zone-name" label="Neighborhood or zone" value={zone.name} onChange={(v) => setZone((z) => ({ ...z, name: v }))} />
+                <button type="button" className="btn btn-outline" onClick={addZone}>Add delivery zone</button>
               </div>
             )}
-            <span className="hint">Only customers in these areas see your bakery, unless they choose to send a cake here.</span>
+            <span className="hint">Customers select a zone, then provide their address and a nearby landmark. Delivery cost is confirmed by your bakery in the quote; customers pay you directly.</span>
           </div>
           <div className="row" style={{ alignItems: 'flex-end', gap: 20 }}>
-            <div className="field" style={{ flex: '0 1 220px' }}>
-              <label htmlFor="b-fee">Delivery fee, {bakery.currency}</label>
-              <input id="b-fee" className="input" inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value)} disabled={disabled} />
-            </div>
             <label className="check">
               <input type="checkbox" checked={form.pickupAvailable} onChange={(e) => set('pickupAvailable', e.target.checked)} disabled={disabled} />
               Customers can also pick up from the shop
@@ -175,49 +174,20 @@ export function SettingsPage() {
         </section>
 
         <section className="stack-lg" aria-labelledby="times-h">
-          <h2 id="times-h">Handover & Collection Times</h2>
+          <h2 id="times-h">Pickup & delivery hours</h2>
           <div className="stack">
-            <span id="times-label" className="strong small">
-              Time slots customers can choose from for pickup or delivery
-            </span>
-            <ul className="chips" aria-labelledby="times-label">
-              {form.handoverTimes.map((time) => (
-                <li key={time} className="chip">
-                  {time}
-                  {!disabled && (
-                    <button type="button" aria-label={`Remove ${time}`} onClick={() => set('handoverTimes', form.handoverTimes.filter((t) => t !== time))}>
-                      <Icon name="close" size={14} />
-                    </button>
-                  )}
-                </li>
-              ))}
-              {form.handoverTimes.length === 0 && <li className="muted">No time slots configured.</li>}
-            </ul>
-            {!disabled && (
-              <div className="row" style={{ maxWidth: 420 }}>
-                <label htmlFor="new-time" className="visually-hidden">
-                  New handover time
-                </label>
-                <input
-                  id="new-time"
-                  className="input"
-                  style={{ flex: 1 }}
-                  placeholder="e.g. 11:30 or 15:00"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addTime()
-                    }
-                  }}
-                />
-                <button type="button" className="btn btn-outline" onClick={addTime}>
-                  Add time
-                </button>
-              </div>
-            )}
-            <span className="hint">These time slots appear as choices in the customer date & time picker.</span>
+            <span className="strong small">Set a flexible window customers can request for pickup or delivery.</span>
+            <div className="grid-2" style={{ maxWidth: 520 }}>
+              <label className="field" htmlFor="handover-start">
+                <span className="label">Window starts</span>
+                <input id="handover-start" className="input" type="time" value={form.handoverStart} onChange={(e) => set('handoverStart', e.target.value)} disabled={disabled} />
+              </label>
+              <label className="field" htmlFor="handover-end">
+                <span className="label">Window ends</span>
+                <input id="handover-end" className="input" type="time" value={form.handoverEnd} onChange={(e) => set('handoverEnd', e.target.value)} disabled={disabled} />
+              </label>
+            </div>
+            <span className="hint">Customers can request any time in this window. Your bakery confirms the exact handover time with each order.</span>
           </div>
         </section>
 
@@ -299,6 +269,7 @@ export function SettingsPage() {
           </div>
         </section>
 
+        <CommissionSummarySection bakeryId={bakery.id} />
         <StaffSection />
       </div>
 
@@ -315,7 +286,6 @@ export function SettingsPage() {
             className="btn btn-ghost"
             onClick={() => {
               setForm(original)
-              setFee(String(bakery.deliveryFee))
               setError(null)
             }}
           >
@@ -327,6 +297,24 @@ export function SettingsPage() {
         </div>
       )}
     </>
+  )
+}
+
+function CommissionSummarySection({ bakeryId }: { bakeryId: string }) {
+  const { data, error, loading } = useAsync(() => getCommissionSummary(bakeryId), [bakeryId])
+  return (
+    <section className="stack" aria-labelledby="commission-summary-h">
+      <h2 id="commission-summary-h">Platform commission</h2>
+      {loading ? <p className="muted">Loading commission summary…</p> : error ? (
+        <p className="form-error" role="alert">{error}</p>
+      ) : data ? (
+        <>
+          <p>Commission rate: {data.commissionRateBps == null ? 'Not configured yet' : `${(data.commissionRateBps / 100).toFixed(2)}%`}</p>
+          <p>Completed orders: {data.completedOrders} · accrued commission: {data.currency} {data.accruedCommission.toLocaleString()}</p>
+          <span className="hint">The platform commission is calculated from completed order subtotals. Delivery costs are excluded. Customers do not pay a platform fee. Settlement is handled directly with the bakery.</span>
+        </>
+      ) : null}
+    </section>
   )
 }
 

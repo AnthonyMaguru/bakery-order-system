@@ -9,6 +9,10 @@ export type AdminOverview = {
   totalOrders: number
 }
 
+export type PlatformSettings = {
+  commissionRateBps: number | null
+}
+
 export type PlatformBakery = {
   id: string
   slug: string
@@ -39,6 +43,9 @@ export type PlatformUser = {
 }
 
 export const getAdminOverview = () => api<AdminOverview>('/admin/overview')
+export const getPlatformSettings = () => api<PlatformSettings>('/admin/settings')
+export const updateCommissionRate = (commissionRateBps: number) =>
+  send<PlatformSettings>('PUT', '/admin/settings/commission', { commissionRateBps })
 
 export const listPlatformBakeries = () => api<PlatformBakery[]>('/admin/bakeries')
 

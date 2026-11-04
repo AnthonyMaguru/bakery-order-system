@@ -32,12 +32,14 @@ export interface BakerySettings {
   phone: string | null
   address: string | null
   city: string
+  region: string
+  municipality: string
+  division: string | null
   country: string
   currency: string
   timezone: string
   imageUrl: string | null
-  deliveryAreas: string[]
-  deliveryFee: number
+  deliveryZones: DeliveryZone[]
   pickupAvailable: boolean
   acceptsCash: boolean
   acceptsMobileMoney: boolean
@@ -47,6 +49,14 @@ export interface BakerySettings {
   closedWeekdays: number[]
   handoverTimes: string[]
   occasions: string[]
+}
+
+export interface DeliveryZone {
+  id?: string
+  region: string
+  municipality: string
+  division: string | null
+  name: string
 }
 
 export interface Member {
@@ -124,6 +134,7 @@ export interface OptionGroup {
 export interface Quotation {
   id: string
   amount: number
+  deliveryAmount: number
   note: string | null
   acceptedAt: string | null
   createdAt: string
@@ -179,14 +190,24 @@ export interface OrderBase {
   inscription: string | null
   notes: string | null
   budget: number | null
-  estimate: number | null
   total: number | null
+  commissionRateBps: number | null
+  commissionAmount: number | null
   designImageUrl: string | null
   dueDate: string
   fulfilment: Fulfilment
-  deliveryArea: string | null
+  deliveryZoneId: string | null
+  deliveryRegion: string | null
+  deliveryMunicipality: string | null
+  deliveryDivision: string | null
+  deliveryZoneName: string | null
   deliveryAddress: string | null
-  deliveryFee: number
+  deliveryLandmark: string | null
+  deliveryLatitude: number | null
+  deliveryLongitude: number | null
+  deliveryAmount: number
+  deliveryZone: DeliveryZone | null
+  review: { id: string; rating: number; body: string | null; response: string | null; createdAt: string } | null
   paymentStatus: PaymentStatus
   amountPaid: number
   cancelledBy: 'CUSTOMER' | 'BAKERY' | null

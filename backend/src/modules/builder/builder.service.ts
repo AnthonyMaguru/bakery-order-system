@@ -33,7 +33,6 @@ export async function customerBuilder(bakeryId: string, category: ProductCategor
       options: g.options.filter(isAvailable).map((o) => ({
         id: o.id,
         name: o.name,
-        price: o.price,
         value: o.value,
         serves: o.serves,
         imageUrl: o.imageUrl,

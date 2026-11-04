@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/cache.dart';
-import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../models/builder.dart';
@@ -10,8 +9,8 @@ import 'cake_preview.dart';
 import 'draft.dart';
 import 'personal_step.dart';
 
-/// Step 2: the cake builder. Options and prices come from the bakery, so options
-/// that are switched off or out of stock never show here.
+/// Step 2: the cake builder. Options come from the bakery, so choices that are
+/// switched off or out of stock never show here.
 class BuilderStep extends StatefulWidget {
   const BuilderStep({super.key, required this.draft});
 
@@ -39,10 +38,9 @@ class _BuilderStepState extends State<BuilderStep> {
 
   bool _isPicked(OptionGroup group, BuilderOption option) => d.selection[group.id]?.contains(option.id) ?? false;
 
-  // Sizes show servings (their price is the base price); other options show what they add.
   String _chipLabel(OptionGroup group, BuilderOption o) {
     if (group.kind == 'SIZE') return o.serves == null ? o.name : '${o.name} · serves ${o.serves}';
-    return o.price > 0 ? '${o.name} +${money(o.price, d.bakery.currency)}' : o.name;
+    return o.name;
   }
 
   void _showSizeHelp(OptionGroup sizes) {
@@ -136,29 +134,13 @@ class _BuilderStepState extends State<BuilderStep> {
           ? null
           : BottomBar(
               note: 'The bakery confirms the final price in your quote.',
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Estimate', style: TextStyle(fontSize: 13, color: AppColors.muted)),
-                        Semantics(liveRegion: true, child: Text(money(d.estimate ?? 0, d.bakery.currency), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: 160,
-                    child: FilledButton(
-                      onPressed: () {
-                        final missing = rules.missingRequired(d.groups, d.selection);
-                        if (missing.isNotEmpty) return showError(context, 'Pick an option for ${missing.join(', ')}');
-                        Navigator.of(context).push(MaterialPageRoute<void>(settings: const RouteSettings(name: 'custom/3'), builder: (_) => PersonalStep(draft: d)));
-                      },
-                      child: const Text('Continue'),
-                    ),
-                  ),
-                ],
+              child: FilledButton(
+                onPressed: () {
+                  final missing = rules.missingRequired(d.groups, d.selection);
+                  if (missing.isNotEmpty) return showError(context, 'Pick an option for ${missing.join(', ')}');
+                  Navigator.of(context).push(MaterialPageRoute<void>(settings: const RouteSettings(name: 'custom/3'), builder: (_) => PersonalStep(draft: d)));
+                },
+                child: const Text('Continue'),
               ),
             ),
     );

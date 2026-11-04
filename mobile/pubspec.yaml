@@ -41,6 +41,7 @@ dependencies:
   firebase_messaging: ^17.0.0
   image_picker: ^1.2.4
   google_fonts: ^8.2.1
+  app_settings: ^9.0.1
 
 dev_dependencies:
   flutter_test:

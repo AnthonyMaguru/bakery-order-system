@@ -15,6 +15,8 @@ import { usersRouter } from "./modules/users/users.routes.js";
 import { bakeryApplicationsRouter } from "./modules/bakery-applications/bakery-applications.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { aiRouter } from "./modules/ai/ai.routes.js";
+import { bakeryReviewsRouter, orderReviewsRouter } from "./modules/reviews/reviews.routes.js";
+import { prisma } from "./lib/prisma.js";
 
 export function createApp() {
   const app = express();
@@ -37,14 +39,25 @@ export function createApp() {
     res.json({ status: "ok" });
   });
 
+  app.get("/api/health/ready", async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: "ready" });
+    } catch (error) {
+      console.error("Readiness check failed", error);
+      res.status(503).json({ status: "not_ready" });
+    }
+  });
+
   app.use("/api/users", usersRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/bakery-applications", bakeryApplicationsRouter);
   app.use("/api/orders", ordersRouter);
+  app.use("/api/orders", orderReviewsRouter);
   app.use("/api/uploads", uploadsRouter);
   app.use("/api/ai", aiRouter);
   // Everything that belongs to one bakery lives under /api/bakeries/:bakeryId.
-  app.use("/api/bakeries", productsRouter, builderRouter, stockRouter, bakeryOrdersRouter, bakeriesRouter);
+  app.use("/api/bakeries", productsRouter, builderRouter, stockRouter, bakeryOrdersRouter, bakeryReviewsRouter, bakeriesRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Not found" });

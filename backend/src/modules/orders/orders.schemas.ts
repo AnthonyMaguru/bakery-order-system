@@ -28,13 +28,24 @@ export const CreateOrderInput = z.object({
   budget: z.number().int().nonnegative().optional(),
   dueDate: z.coerce.date(),
   fulfilment: z.enum(["PICKUP", "DELIVERY"]),
-  deliveryArea: z.string().trim().max(80).optional(),
+  deliveryZoneId: z.string().min(1).optional(),
   deliveryAddress: z.string().trim().max(300).optional(),
+  deliveryLandmark: z.string().trim().max(200).optional(),
+  deliveryLatitude: z.number().min(-90).max(90).optional(),
+  deliveryLongitude: z.number().min(-180).max(180).optional(),
   items: z.array(OrderItemInput).max(50).default([]),
   // Builder choices, from GET /bakeries/:bakeryId/builder.
   optionIds: z.array(z.string().min(1)).max(50).default([]),
   designImageUrl: z.string().url().optional(),
   inspirationImageUrls: z.array(z.string().url()).max(5).default([]),
+}).superRefine((input, ctx) => {
+  if (input.fulfilment === "DELIVERY") {
+    if (!input.deliveryZoneId) ctx.addIssue({ code: "custom", path: ["deliveryZoneId"], message: "Choose a delivery area" });
+    if (!input.deliveryAddress?.trim()) ctx.addIssue({ code: "custom", path: ["deliveryAddress"], message: "Add the delivery address" });
+  }
+  if ((input.deliveryLatitude === undefined) !== (input.deliveryLongitude === undefined)) {
+    ctx.addIssue({ code: "custom", path: ["deliveryLatitude"], message: "Provide both location coordinates or neither" });
+  }
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInput>;
 
@@ -44,6 +55,7 @@ export const UpdateStatusInput = z.object({
 
 export const CreateQuotationInput = z.object({
   amount: z.number().int().positive(),
+  deliveryAmount: z.number().int().nonnegative().default(0),
   note: z.string().trim().max(1000).optional(),
 });
 

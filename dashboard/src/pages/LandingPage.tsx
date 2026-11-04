@@ -10,7 +10,7 @@ export function LandingPage() {
         <div className="landing-copy">
           <h1>More beautiful work. Less order chaos.</h1>
           <p className="landing-lede">
-            Bakery Orders gives your team one clear place to receive custom briefs, quote
+            Crumb &amp; Co. gives your team one clear place to receive custom briefs, quote
             confidently, and keep every promise visible from first message to pickup.
           </p>
           <div className="row">
@@ -52,6 +52,36 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section className="landing-workflow pricing-section" id="pricing">
+        <div className="section-intro">
+          <p className="landing-kicker">Straightforward pricing</p>
+          <h2>A clear three-part model for bakery partners.</h2>
+          <p>
+            No surprise charges: setup is one-time, commission is tied to completed orders, and customers pay the bakery directly.
+          </p>
+        </div>
+        <div className="pricing-tiers">
+          <article className="pricing-tier">
+            <span className="pricing-tier-number">01 · GET STARTED</span>
+            <h3>One-time setup</h3>
+            <strong className="pricing-amount">UGX 70,000</strong>
+            <p>Initial setup fee per bakery. No recurring setup charge.</p>
+          </article>
+          <article className="pricing-tier pricing-tier-featured">
+            <span className="pricing-tier-number">02 · WHEN YOU SELL</span>
+            <h3>Completed-order commission</h3>
+            <strong className="pricing-amount">Configurable rate</strong>
+            <p>A percentage of completed order subtotal, disclosed before onboarding. Delivery is excluded; cancelled orders incur no commission.</p>
+          </article>
+          <article className="pricing-tier">
+            <span className="pricing-tier-number">03 · FOR CUSTOMERS</span>
+            <h3>No platform fee</h3>
+            <strong className="pricing-amount">UGX 0</strong>
+            <p>Customers pay the bakery directly. The bakery confirms delivery costs with the customer.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="landing-invite">
         <div>
           <p className="landing-kicker">Your next season starts here</p>
@@ -62,7 +92,7 @@ export function LandingPage() {
       </section>
 
       <footer className="marketing-footer">
-        <span>Bakery Orders.</span>
+        <span><img src="/app_logo.png" alt="" className="brand-logo" />Crumb &amp; Co.</span>
         <span>Made for independent bakery teams.</span>
       </footer>
     </main>

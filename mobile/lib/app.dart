@@ -1,10 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'core/firebase_setup.dart';
 import 'core/theme.dart';
 import 'features/auth/push.dart';
-import 'features/auth/sign_in_screen.dart';
 import 'features/auth/account_screen.dart';
 import 'features/bakeries/bakeries_screen.dart';
 import 'features/orders/my_orders_screen.dart';
@@ -23,7 +20,7 @@ class BakeryApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bakery Orders',
+      title: 'Crumb & Co.',
       theme: appTheme,
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: messengerKey,

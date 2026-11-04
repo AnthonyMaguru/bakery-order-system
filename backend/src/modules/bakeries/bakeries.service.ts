@@ -13,11 +13,12 @@ const publicFields = {
   phone: true,
   address: true,
   city: true,
+  region: true,
+  municipality: true,
+  division: true,
   country: true,
   currency: true,
   imageUrl: true,
-  deliveryAreas: true,
-  deliveryFee: true,
   pickupAvailable: true,
   acceptsCash: true,
   acceptsMobileMoney: true,
@@ -38,9 +39,25 @@ async function cakePricesFrom(bakeryIds: string[]) {
   return new Map(rows.map((r) => [r.bakeryId, r._min.price]));
 }
 
-function toPublic(bakery: Bakery, priceFrom: number | null | undefined, next: string | null) {
+async function reviewSummariesFrom(bakeryIds: string[]) {
+  const rows = await prisma.bakeryReview.groupBy({
+    by: ["bakeryId"],
+    where: { bakeryId: { in: bakeryIds } },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  return new Map(rows.map((row) => [row.bakeryId, { averageRating: row._avg.rating, reviewCount: row._count._all }]));
+}
+
+function toPublic(
+  bakery: Bakery,
+  priceFrom: number | null | undefined,
+  next: string | null,
+  deliveryZones: Array<{ id: string; region: string; municipality: string; division: string | null; name: string }> = [],
+  reviews: { averageRating: number | null; reviewCount: number } = { averageRating: null, reviewCount: 0 },
+) {
   const visible = Object.fromEntries(Object.keys(publicFields).map((k) => [k, bakery[k as keyof Bakery]]));
-  return { ...visible, cakesFrom: priceFrom ?? null, nextCustomDate: next };
+  return { ...visible, deliveryZones, ...reviews, cakesFrom: priceFrom ?? null, nextCustomDate: next };
 }
 
 // Sorted by the soonest day a custom cake could be ready, then by name.
@@ -51,18 +68,22 @@ export async function listBakeries(filters: { area?: string; country?: string; q
       country: filters.country,
       name: filters.q ? { contains: filters.q, mode: "insensitive" } : undefined,
     },
+    include: { deliveryZones: { select: { id: true, region: true, municipality: true, division: true, name: true } } },
     orderBy: { name: "asc" },
   });
   const inArea = filters.area
-    ? bakeries.filter((b) => b.deliveryAreas.some((a) => sameText(a, filters.area!)) || sameText(b.city, filters.area!))
+    ? bakeries.filter((b) => b.deliveryZones.some((zone) =>
+        [zone.region, zone.municipality, zone.division, zone.name].some((value) => value && sameText(value, filters.area!)),
+      ))
     : bakeries;
 
-  const [prices, nextDates] = await Promise.all([
+  const [prices, nextDates, reviews] = await Promise.all([
     cakePricesFrom(inArea.map((b) => b.id)),
     Promise.all(inArea.map((b) => nextCustomDate(b))),
+    reviewSummariesFrom(inArea.map((b) => b.id)),
   ]);
   return inArea
-    .map((b, i) => toPublic(b, prices.get(b.id), nextDates[i]))
+    .map((b, i) => toPublic(b, prices.get(b.id), nextDates[i], b.deliveryZones, reviews.get(b.id)))
     .sort((a, b) => (a.nextCustomDate ?? "9999").localeCompare(b.nextCustomDate ?? "9999"));
 }
 
@@ -75,12 +96,21 @@ export async function findActiveBakery(idOrSlug: string) {
 
 export async function getPublicBakery(idOrSlug: string) {
   const bakery = await findActiveBakery(idOrSlug);
-  const [prices, next] = await Promise.all([cakePricesFrom([bakery.id]), nextCustomDate(bakery)]);
-  return toPublic(bakery, prices.get(bakery.id), next);
+  const [prices, next, reviews] = await Promise.all([
+    cakePricesFrom([bakery.id]),
+    nextCustomDate(bakery),
+    reviewSummariesFrom([bakery.id]),
+  ]);
+  const deliveryZones = await prisma.deliveryZone.findMany({
+    where: { bakeryId: bakery.id },
+    select: { id: true, region: true, municipality: true, division: true, name: true },
+    orderBy: [{ region: "asc" }, { municipality: "asc" }, { name: "asc" }],
+  });
+  return toPublic(bakery, prices.get(bakery.id), next, deliveryZones, reviews.get(bakery.id));
 }
 
 export async function getStaffBakery(bakeryId: string) {
-  const bakery = await prisma.bakery.findUnique({ where: { id: bakeryId } });
+  const bakery = await prisma.bakery.findUnique({ where: { id: bakeryId }, include: { deliveryZones: true } });
   if (!bakery) throw notFound("Bakery");
   return bakery;
 }
@@ -89,20 +119,27 @@ export async function updateSettings(bakeryId: string, data: BakerySettingsUpdat
   const current = await getStaffBakery(bakeryId);
   const next = { ...current, ...data };
   if (!next.acceptsCash && !next.acceptsMobileMoney) throw badRequest("Accept at least one way to pay");
-  if (!next.pickupAvailable && next.deliveryAreas.length === 0) {
+  const currentZoneCount = await prisma.deliveryZone.count({ where: { bakeryId } });
+  const deliveryZones = data.deliveryZones ?? current.deliveryZones;
+  if (!next.pickupAvailable && deliveryZones.length === 0) {
     throw badRequest("Offer pickup or at least one delivery area, or customers can't receive their cakes");
   }
-  if (data.closedWeekdays) data.closedWeekdays = [...new Set(data.closedWeekdays)].sort();
-  if (data.deliveryAreas) {
-    data.deliveryAreas = data.deliveryAreas.filter((a, i, all) => all.findIndex((b) => sameText(a, b)) === i);
-  }
-  if (data.handoverTimes) {
-    data.handoverTimes = [...new Set(data.handoverTimes.map((t) => t.trim()).filter(Boolean))].sort();
-  }
-  if (data.occasions) {
-    data.occasions = [...new Set(data.occasions.map((o) => o.trim()).filter(Boolean))];
-  }
-  return prisma.bakery.update({ where: { id: bakeryId }, data });
+  const { deliveryZones: requestedZones, ...fields } = data;
+  if (fields.closedWeekdays) fields.closedWeekdays = [...new Set(fields.closedWeekdays)].sort();
+  if (fields.handoverTimes) fields.handoverTimes = [...new Set(fields.handoverTimes.map((t) => t.trim()).filter(Boolean))].sort();
+  if (fields.occasions) fields.occasions = [...new Set(fields.occasions.map((o) => o.trim()).filter(Boolean))];
+  return prisma.$transaction(async (tx) => {
+    if (requestedZones) {
+      await tx.deliveryZone.deleteMany({ where: { bakeryId } });
+      await tx.deliveryZone.createMany({
+        data: requestedZones.map((zone) => ({ ...zone, division: zone.division || null, bakeryId })),
+        skipDuplicates: true,
+      });
+    } else if (currentZoneCount === 0 && !next.pickupAvailable) {
+      throw badRequest("Add at least one delivery area or enable pickup");
+    }
+    return tx.bakery.update({ where: { id: bakeryId }, data: fields, include: { deliveryZones: true } });
+  });
 }
 
 // ---------------------------------------------------------------------------

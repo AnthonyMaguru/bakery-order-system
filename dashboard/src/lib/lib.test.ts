@@ -48,9 +48,9 @@ describe('order flow', () => {
   })
 
   it('says who the order is waiting for', () => {
-    expect(waitingFor({ status: 'SUBMITTED', type: 'CUSTOM' })).toBe('Needs a quote')
-    expect(waitingFor({ status: 'QUOTED', type: 'CUSTOM' })).toBe('Waiting for the customer')
-    expect(waitingFor({ status: 'PREPARING', type: 'CUSTOM' })).toBe('')
+    expect(waitingFor({ status: 'SUBMITTED', type: 'CUSTOM', fulfilment: 'PICKUP' })).toBe('Needs a quote')
+    expect(waitingFor({ status: 'QUOTED', type: 'CUSTOM', fulfilment: 'PICKUP' })).toBe('Waiting for the customer')
+    expect(waitingFor({ status: 'PREPARING', type: 'CUSTOM', fulfilment: 'PICKUP' })).toBe('')
   })
 
   it('only takes payments after confirmation', () => {

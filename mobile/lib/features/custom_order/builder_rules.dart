@@ -53,8 +53,6 @@ List<BuilderOption> picked(List<OptionGroup> groups, Selection selection) => [
           if (selection[g.id]?.contains(o.id) ?? false) o,
     ];
 
-int estimate(List<OptionGroup> groups, Selection selection) => picked(groups, selection).fold(0, (sum, o) => sum + o.price);
-
 List<String> missingRequired(List<OptionGroup> groups, Selection selection) =>
     [for (final g in groups) if (g.required && (selection[g.id]?.isEmpty ?? true)) g.name];
 

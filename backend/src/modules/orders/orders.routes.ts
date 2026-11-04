@@ -41,8 +41,8 @@ ordersRouter.patch("/:id/status", async (req, res) => {
 });
 
 ordersRouter.post("/:id/quotations", async (req, res) => {
-  const { amount, note } = CreateQuotationInput.parse(req.body);
-  res.status(201).json(await orders.addQuotation(req.user!, req.params.id, amount, note));
+  const { amount, deliveryAmount, note } = CreateQuotationInput.parse(req.body);
+  res.status(201).json(await orders.addQuotation(req.user!, req.params.id, amount, deliveryAmount, note));
 });
 
 ordersRouter.post("/:id/accept-quote", async (req, res) => {

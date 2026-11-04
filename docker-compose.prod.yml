@@ -4,10 +4,34 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bakery}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bakery_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the production environment}
       POSTGRES_DB: ${POSTGRES_DB:-bakery}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bakery} -d ${POSTGRES_DB:-bakery}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bakery}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the production environment}@db:5432/${POSTGRES_DB:-bakery}
+      PUBLIC_API_URL: https://${DOMAIN:?Set DOMAIN}/api
+      CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN}
+      AUTH_DEV_BYPASS: "false"
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-service-account.json
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    command: ["npm", "run", "db:deploy"]
+    restart: "no"
 
   backend:
     build:
@@ -15,29 +39,38 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-bakery}:${POSTGRES_PASSWORD:-bakery_secure_pass}@db:5432/${POSTGRES_DB:-bakery}
-      PUBLIC_API_URL: https://${DOMAIN}/api
-      CORS_ORIGINS: https://${DOMAIN}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bakery}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the production environment}@db:5432/${POSTGRES_DB:-bakery}
+      PUBLIC_API_URL: https://${DOMAIN:?Set DOMAIN}/api
+      CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN}
       AUTH_DEV_BYPASS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-service-account.json
     volumes:
       - ./backend/secrets:/app/secrets:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   dashboard:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=https://${DOMAIN}/api
-        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-}
-        - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-}
-        - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-}
-        - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID:-}
-        - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
+        - VITE_API_URL=https://${DOMAIN:?Set DOMAIN}/api
+        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:?Set VITE_FIREBASE_API_KEY}
+        - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:?Set VITE_FIREBASE_AUTH_DOMAIN}
+        - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:?Set VITE_FIREBASE_PROJECT_ID}
+        - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID:?Set VITE_FIREBASE_APP_ID}
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID:?Set VITE_FIREBASE_MESSAGING_SENDER_ID}
     restart: unless-stopped
 
   caddy:

@@ -19,6 +19,7 @@ import { SchedulePage } from './pages/SchedulePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { SignInPage } from './pages/SignInPage'
 import { StockPage } from './pages/StockPage'
+import { PrivacyPage } from './pages/PrivacyPage'
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/apply" element={<ApplicationPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/signin" element={<SignInPage />} />
 
           {/* Platform Administration Console - Governs platform, not bakery business secrets */}

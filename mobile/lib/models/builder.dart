@@ -5,7 +5,7 @@ class BuilderOption {
   final String id;
   final String name;
 
-  /// Added to the estimate when picked. Sizes carry the base price.
+  /// Always zero for customer-facing builder responses; quote prices are set by the bakery.
   final int price;
 
   /// Drawing hint: "ROUND", "2", "#F5B8C9", "pearls".
@@ -16,7 +16,7 @@ class BuilderOption {
   factory BuilderOption.fromJson(Map<String, dynamic> json) => BuilderOption(
         id: json['id'] as String,
         name: json['name'] as String,
-        price: json['price'] as int,
+        price: json['price'] as int? ?? 0,
         value: json['value'] as String?,
         serves: json['serves'] as int?,
         imageUrl: json['imageUrl'] as String?,

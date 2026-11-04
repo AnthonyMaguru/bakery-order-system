@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/ai_service.dart';
 import '../../core/api_client.dart';
-import '../../core/uploads.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import 'ai_cake_studio_step.dart';
@@ -81,14 +80,16 @@ class _PersonalStepState extends State<PersonalStep> {
       }
 
       final bytes = await file.readAsBytes();
-      final url = await uploadPhoto(
-        Uint8List.fromList(bytes),
-        contentType: _contentType(file.name),
-      );
-
       if (mounted) {
         setState(() {
-          d.photos = [...d.photos, (bytes: bytes, url: url)];
+          d.photos = [
+            ...d.photos,
+            (
+              bytes: Uint8List.fromList(bytes),
+              url: '',
+              contentType: _contentType(file.name),
+            ),
+          ];
         });
       }
     } catch (e) {
@@ -232,16 +233,6 @@ class _PersonalStepState extends State<PersonalStep> {
     }
   }
 
-  void _removeVisual() {
-    setState(() {
-      d
-        ..designImageUrl = null
-        ..aiImageBytes = null
-        ..aiPrompt = null
-        ..isAiDesigned = false;
-    });
-  }
-
   Widget _aiCakeHeroCard() {
     final prompt = d.aiPrompt?.trim() ?? '';
     return Container(
@@ -266,20 +257,21 @@ class _PersonalStepState extends State<PersonalStep> {
             child: AspectRatio(
               aspectRatio: 16 / 10,
               child: d.aiImageBytes != null
-                  ? Image.memory(
-                      d.aiImageBytes!,
-                      fit: BoxFit.cover,
-                    )
+                  ? Image.memory(d.aiImageBytes!, fit: BoxFit.cover)
                   : (d.designImageUrl != null &&
-                          !d.designImageUrl!.startsWith('pollinations://')
-                      ? (d.designImageUrl!.startsWith('assets/')
-                          ? Image.asset(d.designImageUrl!, fit: BoxFit.cover)
-                          : Image.network(
-                              d.designImageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _fallbackDesign(),
-                            ))
-                      : _fallbackDesign()),
+                            !d.designImageUrl!.startsWith('pollinations://')
+                        ? (d.designImageUrl!.startsWith('assets/')
+                              ? Image.asset(
+                                  d.designImageUrl!,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  d.designImageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _fallbackDesign(),
+                                ))
+                        : _fallbackDesign()),
             ),
           ),
           Padding(
@@ -290,7 +282,10 @@ class _PersonalStepState extends State<PersonalStep> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.accentSoft,
                         borderRadius: BorderRadius.circular(20),
@@ -298,7 +293,11 @@ class _PersonalStepState extends State<PersonalStep> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, size: 14, color: AppColors.accent),
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 14,
+                            color: AppColors.accent,
+                          ),
                           SizedBox(width: 5),
                           Text(
                             'AI Cake Concept',
@@ -315,7 +314,10 @@ class _PersonalStepState extends State<PersonalStep> {
                     TextButton.icon(
                       onPressed: _editInAiStudio,
                       icon: const Icon(Icons.edit_outlined, size: 16),
-                      label: const Text('Edit Concept', style: TextStyle(fontSize: 13)),
+                      label: const Text(
+                        'Edit Concept',
+                        style: TextStyle(fontSize: 13),
+                      ),
                     ),
                   ],
                 ),
@@ -323,7 +325,10 @@ class _PersonalStepState extends State<PersonalStep> {
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.sand,
                       borderRadius: BorderRadius.circular(10),
@@ -361,7 +366,10 @@ class _PersonalStepState extends State<PersonalStep> {
         children: [
           Icon(Icons.cake_outlined, color: AppColors.muted, size: 36),
           SizedBox(height: 8),
-          Text('AI Design Ready', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+          Text(
+            'AI Design Ready',
+            style: TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
         ],
       ),
     );
@@ -412,10 +420,7 @@ class _PersonalStepState extends State<PersonalStep> {
                     ),
                     Text(
                       'Turn your cake description into a photorealistic visual.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.ink2,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppColors.ink2),
                     ),
                   ],
                 ),
@@ -433,9 +438,7 @@ class _PersonalStepState extends State<PersonalStep> {
                   )
                 : const Icon(Icons.auto_awesome, size: 18),
             label: Text(
-              _generatingAi
-                  ? 'Visualizing your cake…'
-                  : '✨ Visualize with AI',
+              _generatingAi ? 'Visualizing your cake…' : '✨ Visualize with AI',
             ),
           ),
           if (_aiError != null) ...[
@@ -477,7 +480,8 @@ class _PersonalStepState extends State<PersonalStep> {
 
   @override
   Widget build(BuildContext context) {
-    final hasAiDesign = d.isAiDesigned &&
+    final hasAiDesign =
+        d.isAiDesigned &&
         (d.aiImageBytes != null ||
             (d.designImageUrl != null && d.designImageUrl!.isNotEmpty));
 

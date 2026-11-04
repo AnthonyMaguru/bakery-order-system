@@ -1,19 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { getAdminOverview, type AdminOverview } from '../api/admin'
+import { getAdminOverview, getPlatformSettings, updateCommissionRate, type AdminOverview } from '../api/admin'
 import { ApiError } from '../api/client'
 
 export function AdminOverviewPage() {
   const [data, setData] = useState<AdminOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [commissionRate, setCommissionRate] = useState('')
+  const [savingRate, setSavingRate] = useState(false)
+  const [rateMessage, setRateMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    getAdminOverview()
-      .then(setData)
+    Promise.all([getAdminOverview(), getPlatformSettings()])
+      .then(([overview, settings]) => {
+        setData(overview)
+        setCommissionRate(settings.commissionRateBps == null ? '' : (settings.commissionRateBps / 100).toString())
+      })
       .catch((cause) => setError(cause instanceof ApiError ? cause.message : 'Could not load platform overview.'))
       .finally(() => setLoading(false))
   }, [])
+
+  async function saveCommission(e: FormEvent) {
+    e.preventDefault()
+    const percent = Number(commissionRate)
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      setRateMessage('Enter a percentage from 0 to 100.')
+      return
+    }
+    setSavingRate(true)
+    setRateMessage(null)
+    try {
+      await updateCommissionRate(Math.round(percent * 100))
+      setRateMessage('Commission rate saved. It will apply to orders completed from now on.')
+    } catch (cause) {
+      setRateMessage(cause instanceof ApiError ? cause.message : 'Could not save the commission rate.')
+    } finally {
+      setSavingRate(false)
+    }
+  }
 
   return (
     <>
@@ -151,6 +176,22 @@ export function AdminOverviewPage() {
           </div>
 
           {/* Quick Actions */}
+          <section className="panel stack" aria-labelledby="commission-h">
+            <h2 id="commission-h">Bakery commission</h2>
+            <p className="muted">Set the percentage charged to bakeries on completed order subtotals. Delivery costs and customer platform fees are excluded. Existing orders keep their saved rate.</p>
+            <form className="row" onSubmit={saveCommission}>
+              <label className="field" htmlFor="commission-rate">
+                Commission rate (%)
+                <input id="commission-rate" className="input" type="number" min="0" max="100" step="0.01" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={savingRate || commissionRate === ''}>
+                {savingRate ? 'Saving…' : 'Save rate'}
+              </button>
+            </form>
+            {rateMessage && <p className="small" role="status">{rateMessage}</p>}
+            {!commissionRate && <p className="alert alert-info">No rate is configured yet. Order completion is blocked until an administrator sets one.</p>}
+          </section>
+
           <div
             style={{
               background: 'var(--surface)',

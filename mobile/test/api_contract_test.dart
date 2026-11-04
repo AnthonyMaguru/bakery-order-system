@@ -30,7 +30,7 @@ void main() {
     expect(products.map((p) => p.name), isNot(contains('Number candles')));
   });
 
-  test('the real builder gives the same estimate as the backend', () {
+  test('the builder retains selections without exposing a price estimate', () {
     final groups = (fixture('builder') as List).map((g) => OptionGroup.fromJson(g as Map<String, dynamic>)).toList();
     expect(groups.map((g) => g.kind), containsAll(['SHAPE', 'TIERS', 'SIZE', 'FLAVOUR', 'ICING_COLOUR', 'DECORATION']));
     expect(groups.expand((g) => g.options).map((o) => o.name), isNot(contains('Edible gold leaf')), reason: 'out of stock');
@@ -48,7 +48,17 @@ void main() {
     choose('Decorations', 'Fresh flowers');
 
     final order = Order.fromJson(fixture('order_detail_quoted') as Map<String, dynamic>);
-    expect(estimate(groups, selection), order.estimate, reason: 'the order fixture was placed with these choices');
+    final sizeId = groups.firstWhere((group) => group.name == 'Size').id;
+    final decorationId = groups.firstWhere((group) => group.name == 'Decorations').id;
+    final sizeOption = groups.firstWhere((group) => group.id == sizeId).options.firstWhere((option) => option.name == '2 kg');
+    final decorations = groups.firstWhere((group) => group.id == decorationId).options;
+    expect(selection[sizeId], contains(sizeOption.id));
+    expect(selection[decorationId], containsAll([
+      decorations.firstWhere((option) => option.name == 'Pearls').id,
+      decorations.firstWhere((option) => option.name == 'Fresh flowers').id,
+    ]));
+    expect(order.total, isNull, reason: 'the bakery has not quoted this order yet');
+    expect((fixture('order_detail_quoted') as Map<String, dynamic>).containsKey('estimate'), isFalse);
     expect(lookFor(groups, selection).tiers, 2);
   });
 

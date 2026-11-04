@@ -48,9 +48,9 @@ export function BakeryApplicationsPage() {
     setSavingId(application.id)
     setError(null)
     try {
-      await onboardBakeryApplication(application.id)
+      const bakery = await onboardBakeryApplication(application.id)
       setApplications((current) => current.map((item) => (
-        item.id === application.id ? { ...item, status: 'APPROVED' } : item
+        item.id === application.id ? { ...item, status: 'APPROVED', bakeryId: bakery.id } : item
       )))
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not onboard this bakery.')
@@ -102,11 +102,13 @@ export function BakeryApplicationsPage() {
                     {STATUS_ORDER.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}
                   </select>
                 </label>
-                {application.status !== 'DECLINED' && (
+                {application.bakeryId ? (
+                  <span className="small muted">Workspace created</span>
+                ) : application.status === 'APPROVED' ? (
                   <button className="btn btn-dark btn-sm" type="button" disabled={savingId === application.id} onClick={() => void onboard(application)}>
                     {savingId === application.id ? 'Onboarding…' : 'Onboard bakery'}
                   </button>
-                )}
+                ) : <span className="small muted">Approve before creating a workspace.</span>}
               </div>
             </article>
           ))}

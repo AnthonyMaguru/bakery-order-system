@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { addDays, dayKey, isDayKey, isoWeekday } from "../src/lib/dates.js";
 import { orderNeedsDeadlineReminder } from "../src/jobs/deadline-reminders.js";
 import { buildCalendar, dayStatus, type CapacityRules } from "../src/modules/bakeries/availability.js";
+import { BakerySettingsUpdate } from "../src/modules/bakeries/bakeries.schemas.js";
 import { isAvailable, resolveSelections, type BuilderGroup } from "../src/modules/builder/selection.js";
-import { cancelError, paymentStatusFor, staffStatusError } from "../src/modules/orders/order-rules.js";
+import { cancelError, commissionAmountFor, paymentStatusFor, staffStatusError } from "../src/modules/orders/order-rules.js";
 import { stockLevel } from "../src/modules/stock/stock-level.js";
 import { detectImageType } from "../src/modules/uploads/image-type.js";
 
@@ -41,6 +42,18 @@ describe("capacity", () => {
     expect(dayStatus("2026-10-20", today, rules, 1, false)).toBe("OPEN");
   });
 
+  describe("delivery zones", () => {
+    it("rejects duplicate zones case-insensitively", () => {
+      const result = BakerySettingsUpdate.safeParse({
+        deliveryZones: [
+          { region: "Central Region", municipality: "Kampala", name: "Ntinda" },
+          { region: "central region", municipality: "Kampala", name: "ntinda" },
+        ],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   it("ignores the daily limit for ready-made orders", () => {
     expect(dayStatus("2026-10-20", today, rules, 5, false, false)).toBe("OPEN");
   });
@@ -76,9 +89,8 @@ describe("builder choices", () => {
     },
   ];
 
-  it("adds up the estimate", () => {
-    const { estimate, selections } = resolveSelections(groups, ["2kg", "pearls", "flowers", "pearls"]);
-    expect(estimate).toBe(135000);
+  it("resolves selections without producing a customer price estimate", () => {
+    const selections = resolveSelections(groups, ["2kg", "pearls", "flowers", "pearls"]);
     expect(selections).toHaveLength(3);
   });
 
@@ -96,9 +108,16 @@ describe("builder choices", () => {
 });
 
 describe("order status rules", () => {
+  it("calculates commission on the subtotal, excluding delivery", () => {
+    expect(commissionAmountFor(165000, 5000, 1000)).toBe(16000);
+    expect(commissionAmountFor(5000, 7000, 1000)).toBe(0);
+    expect(commissionAmountFor(100, 0, 333)).toBe(3);
+  });
+
   it("lets staff confirm ready-made orders but not custom ones", () => {
-    expect(staffStatusError({ status: "SUBMITTED", type: "STANDARD" }, "CONFIRMED")).toBeNull();
+    expect(staffStatusError({ status: "SUBMITTED", type: "STANDARD", fulfilment: "PICKUP" }, "CONFIRMED")).toBeNull();
     expect(staffStatusError({ status: "SUBMITTED", type: "CUSTOM" }, "CONFIRMED")).toMatch(/accepts your quote/);
+    expect(staffStatusError({ status: "SUBMITTED", type: "STANDARD", fulfilment: "DELIVERY" }, "CONFIRMED")).toMatch(/quote/);
   });
 
   it("only moves forward one step at a time", () => {

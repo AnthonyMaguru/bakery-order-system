@@ -53,7 +53,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 // JSON request helpers, so callers don't repeat method and body.
-export const send = <T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown) =>
+export const send = <T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown) =>
   api<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) })
 
 export const query = (params: Record<string, string | number | undefined>) => {
