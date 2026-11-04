@@ -6,6 +6,9 @@ export type BakeryApplicationInput = {
   email: string
   phone: string
   city: string
+  region: string
+  municipality: string
+  division?: string
   notes?: string
 }
 
@@ -19,11 +22,15 @@ export type BakeryApplicationStatus = BakeryApplicationReceipt['status'] | 'CONT
 
 export type BakeryApplication = {
   id: string
+  bakeryId: string | null
   bakeryName: string
   contactName: string
   email: string
   phone: string
   city: string
+  region: string
+  municipality: string
+  division: string | null
   notes: string | null
   status: BakeryApplicationStatus
   createdAt: string

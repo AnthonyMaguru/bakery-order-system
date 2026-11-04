@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { requireRole } from "../src/lib/access.js";
+import { prisma } from "../src/lib/prisma.js";
 
 describe("role access", () => {
   it("rejects a customer from an admin-only route", () => {
@@ -21,9 +22,13 @@ describe("role access", () => {
 
   it("does not allow an admin without bakery membership to pass isMember", async () => {
     const { isMember } = await import("../src/lib/access.js");
+    const membershipLookup = vi.spyOn(prisma.bakeryMember, "findUnique").mockResolvedValue(null as never);
     const adminUser = { id: "admin-1", role: "ADMIN" } as never;
-    const member = await isMember(adminUser, "bakery-999");
-    expect(member).toBe(false);
+    try {
+      const member = await isMember(adminUser, "bakery-999");
+      expect(member).toBe(false);
+    } finally {
+      membershipLookup.mockRestore();
+    }
   });
 });
-

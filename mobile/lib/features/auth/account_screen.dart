@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
-import '../../core/config.dart';
 import '../../core/firebase_setup.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
@@ -19,7 +18,8 @@ class AccountScreen extends StatefulWidget {
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
-class _AccountScreenState extends State<AccountScreen> {
+class _AccountScreenState extends State<AccountScreen>
+    with WidgetsBindingObserver {
   late Future<Map<String, dynamic>?> _profile;
   final _name = TextEditingController();
   final _phone = TextEditingController();
@@ -30,6 +30,7 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _profile = _load();
     if (firebaseReady) {
       _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -42,10 +43,29 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authSub?.cancel();
     _name.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _refreshNotificationSettings();
+    }
+  }
+
+  Future<void> _refreshNotificationSettings() async {
+    setState(() {});
+    try {
+      if (await Push.instance.status() == PushStatus.enabled) {
+        await Push.instance.register();
+      }
+    } catch (error) {
+      if (mounted) showError(context, error);
+    }
   }
 
   Future<Map<String, dynamic>?> _load() async {
@@ -58,7 +78,9 @@ class _AccountScreenState extends State<AccountScreen> {
       final profile = Map<String, dynamic>.from(res);
       _name.text =
           profile['name'] as String? ??
-          (firebaseReady ? FirebaseAuth.instance.currentUser?.displayName : null) ??
+          (firebaseReady
+              ? FirebaseAuth.instance.currentUser?.displayName
+              : null) ??
           '';
       _phone.text = profile['phone'] as String? ?? '';
       return profile;
@@ -158,7 +180,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
             final email =
                 profile['email'] as String? ??
-                (firebaseReady ? FirebaseAuth.instance.currentUser?.email : null) ??
+                (firebaseReady
+                    ? FirebaseAuth.instance.currentUser?.email
+                    : null) ??
                 '';
 
             return RefreshIndicator(
@@ -300,37 +324,45 @@ class _AccountScreenState extends State<AccountScreen> {
                           ),
                           subtitle: Text(
                             enabled
-                                ? 'We will notify you about quotes and order status changes.'
+                                ? 'Order updates are on. Manage notification categories in your device settings.'
                                 : blocked
-                                ? 'Allow notifications in your device settings to receive order updates.'
+                                ? 'Notifications are blocked. Open device settings to allow order updates.'
                                 : unavailable
                                 ? 'Connect Firebase to enable order updates.'
                                 : 'Know when your bakery replies or updates your order.',
                           ),
-                          trailing: enabled
-                              ? const Icon(
-                                  Icons.check_circle,
-                                  color: AppColors.ok,
-                                )
-                              : blocked
-                              ? const Text(
-                                  'Check device settings',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(color: AppColors.muted),
-                                )
-                              : TextButton(
-                                  onPressed: unavailable
-                                      ? null
-                                      : () async {
-                                          final next = await Push.instance
-                                              .requestPermission();
-                                          if (next == PushStatus.enabled) {
-                                              await Push.instance.register();
-                                          }
-                                          if (mounted) setState(() {});
-                                        },
-                                  child: const Text('Enable'),
-                                ),
+                          trailing: TextButton(
+                            onPressed: unavailable
+                                ? null
+                                : () async {
+                                    try {
+                                      if (status == PushStatus.notDetermined) {
+                                        final next = await Push.instance
+                                            .requestPermission();
+                                        if (next == PushStatus.enabled) {
+                                          await Push.instance.register();
+                                        }
+                                      } else {
+                                        await Push.instance
+                                            .openNotificationSettings();
+                                      }
+                                    } catch (error) {
+                                      if (context.mounted) {
+                                        showError(context, error);
+                                      }
+                                    }
+                                    if (mounted) setState(() {});
+                                  },
+                            child: Text(
+                              unavailable
+                                  ? 'Unavailable'
+                                  : blocked
+                                  ? 'Open settings'
+                                  : enabled
+                                  ? 'Manage'
+                                  : 'Enable',
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -399,10 +431,7 @@ class _GuestAccountView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
-        Text(
-          'Account',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+        Text('Account', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
         const Text(
           'Sign in to manage orders, custom bakes & preferences',
@@ -444,14 +473,16 @@ class _GuestAccountView extends StatelessWidget {
                       children: [
                         Text(
                           'Welcome to Crumb & Co.',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 2),
                         const Text(
                           'Your artisanal cake community',
-                          style: TextStyle(color: AppColors.muted, fontSize: 13),
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),

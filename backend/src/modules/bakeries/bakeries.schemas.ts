@@ -2,10 +2,27 @@ import { z } from "zod";
 import { isDayKey } from "../../lib/dates.js";
 
 const DayKey = z.string().refine(isDayKey, "Use a real date written as YYYY-MM-DD");
+const DeliveryZones = z
+  .array(z.object({
+    region: z.string().trim().min(1).max(80),
+    municipality: z.string().trim().min(1).max(80),
+    division: z.string().trim().max(80).nullable().optional(),
+    name: z.string().trim().min(1).max(80),
+  }))
+  .max(100)
+  .superRefine((zones, ctx) => {
+    const seen = new Set<string>();
+    zones.forEach((zone, index) => {
+      const key = [zone.region, zone.municipality, zone.division ?? "", zone.name].map((part) => part.toLowerCase()).join("|");
+      if (seen.has(key)) {
+        ctx.addIssue({ code: "custom", path: [index], message: "Delivery zones must be unique" });
+      }
+      seen.add(key);
+    });
+  });
 
 export const BakeriesQuery = z.object({
-  // A delivery area such as "Ntinda". Leave it out to list every bakery.
-  area: z.string().trim().min(1).max(80).optional(),
+  area: z.string().trim().min(1).max(120).optional(),
   country: z
     .string()
     .length(2)
@@ -28,8 +45,7 @@ export const BakerySettingsUpdate = z
     address: z.string().trim().max(200).nullable(),
     city: z.string().trim().min(1).max(80),
     imageUrl: z.string().url().nullable(),
-    deliveryAreas: z.array(z.string().trim().min(1).max(80)).max(50),
-    deliveryFee: z.number().int().nonnegative(),
+    deliveryZones: DeliveryZones,
     pickupAvailable: z.boolean(),
     acceptsCash: z.boolean(),
     acceptsMobileMoney: z.boolean(),

@@ -22,6 +22,7 @@ class WhenStep extends StatefulWidget {
 class _WhenStepState extends State<WhenStep> {
   CustomOrderDraft get d => widget.draft;
   late final _address = TextEditingController(text: d.deliveryAddress);
+  late final _landmark = TextEditingController(text: d.deliveryLandmark);
   late final _budget = TextEditingController(text: d.budget?.toString() ?? '');
   late String _fulfilment = d.dueDate == null ? defaultFulfilment(d.bakery) : d.fulfilment;
   String? _error;
@@ -29,6 +30,7 @@ class _WhenStepState extends State<WhenStep> {
   @override
   void dispose() {
     _address.dispose();
+    _landmark.dispose();
     _budget.dispose();
     super.dispose();
   }
@@ -37,12 +39,13 @@ class _WhenStepState extends State<WhenStep> {
     d
       ..fulfilment = _fulfilment
       ..deliveryAddress = _address.text
+      ..deliveryLandmark = _landmark.text
       ..budget = int.tryParse(_budget.text.replaceAll(',', '').trim());
   }
 
   void _continue() {
     _save();
-    final problem = d.dueDate == null ? 'Choose when you need it' : fulfilmentProblem(_fulfilment, d.deliveryArea, _address.text);
+    final problem = d.dueDate == null ? 'Choose when you need it' : fulfilmentProblem(_fulfilment, d.deliveryZoneId, _address.text);
     if (problem != null) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(problem)));
@@ -83,10 +86,11 @@ class _WhenStepState extends State<WhenStep> {
                   FulfilmentFields(
                     bakery: d.bakery,
                     fulfilment: _fulfilment,
-                    area: d.deliveryArea,
+                    area: d.deliveryZoneId,
                     address: _address,
+                    landmark: _landmark,
                     onFulfilment: (f) => setState(() => _fulfilment = f),
-                    onArea: (a) => setState(() => d.deliveryArea = a),
+                    onArea: (a) => setState(() => d.deliveryZoneId = a),
                   ),
                   const SizedBox(height: 22),
                   const FieldLabel('Your budget', optional: true),

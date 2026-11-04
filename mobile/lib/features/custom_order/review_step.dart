@@ -1,4 +1,4 @@
-
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -6,10 +6,10 @@ import 'package:flutter/rendering.dart';
 
 import '../../core/api_client.dart';
 import '../../core/format.dart';
-import '../../core/uploads.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../auth/auth.dart';
+import '../outbox/outbox.dart';
 import '../orders/submit.dart';
 import 'builder_rules.dart' as rules;
 import 'cake_preview.dart';
@@ -33,8 +33,8 @@ class _ReviewStepState extends State<ReviewStep> {
   String? _error;
 
   void _editStep(String name) => Navigator.of(
-        context,
-      ).popUntil((r) => r.settings.name == name || r.isFirst);
+    context,
+  ).popUntil((r) => r.settings.name == name || r.isFirst);
 
   Future<void> _send() async {
     if (!await ensureSignedIn(context)) return;
@@ -46,24 +46,42 @@ class _ReviewStepState extends State<ReviewStep> {
     });
 
     try {
-      // Upload AI-generated image bytes first. The pollinations:// URL is
-      // only an internal placeholder and cannot be displayed by the bakery.
+      final attachments = <OutboxAttachment>[];
       if (d.aiImageBytes != null &&
           (d.designImageUrl == null ||
               d.designImageUrl!.startsWith('pollinations://'))) {
-        final remoteUrl = await uploadPhoto(
-          d.aiImageBytes!,
-          contentType: 'image/jpeg',
+        d.designImageUrl = null;
+        attachments.add(
+          OutboxAttachment(
+            field: 'designImageUrl',
+            bytes: d.aiImageBytes!,
+            contentType: 'image/jpeg',
+          ),
         );
-
-        d.designImageUrl = remoteUrl;
       } else if (d.designImageUrl != null &&
           d.designImageUrl!.startsWith('pollinations://')) {
         d.designImageUrl = null;
       } else if (d.useBuilder && d.designImageUrl == null) {
-        // Upload the cake-builder preview.
-        await _uploadPreview();
+        final preview = await _previewBytes();
+        if (preview != null) {
+          attachments.add(
+            OutboxAttachment(
+              field: 'designImageUrl',
+              bytes: preview,
+              contentType: 'image/png',
+            ),
+          );
+        }
       }
+      attachments.addAll([
+        for (final photo in d.photos)
+          if (photo.url.isEmpty)
+            OutboxAttachment(
+              field: 'inspirationImageUrls',
+              bytes: photo.bytes,
+              contentType: photo.contentType,
+            ),
+      ]);
 
       if (!mounted) return;
 
@@ -73,6 +91,7 @@ class _ReviewStepState extends State<ReviewStep> {
         title: d.title,
         bakeryName: d.bakery.name,
         custom: true,
+        attachments: attachments,
       );
     } on ApiException catch (e) {
       if (mounted) {
@@ -93,32 +112,23 @@ class _ReviewStepState extends State<ReviewStep> {
     }
   }
 
-  Future<void> _uploadPreview() async {
+  Future<Uint8List?> _previewBytes() async {
     await WidgetsBinding.instance.endOfFrame;
 
-    final boundary = _previewKey.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
+    final boundary =
+        _previewKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
 
-    if (boundary == null) return;
+    if (boundary == null) return null;
 
     final image = await boundary.toImage(pixelRatio: 2);
 
     try {
-      final data = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
 
-      if (data == null) return;
+      if (data == null) return null;
 
-      final bytes = data.buffer.asUint8List(
-        data.offsetInBytes,
-        data.lengthInBytes,
-      );
-
-      d.designImageUrl = await uploadPhoto(
-        bytes,
-        contentType: 'image/png',
-      );
+      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
     } finally {
       image.dispose();
     }
@@ -126,12 +136,12 @@ class _ReviewStepState extends State<ReviewStep> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = d.bakery.currency;
-    final estimate = d.estimate;
+    final zone = d.bakery.deliveryZones
+        .where((zone) => zone.id == d.deliveryZoneId)
+        .firstOrNull;
 
     final personal = [
-      if (d.inscription.trim().isNotEmpty)
-        '“${d.inscription.trim()}”',
+      if (d.inscription.trim().isNotEmpty) '“${d.inscription.trim()}”',
       if (d.theme.trim().isNotEmpty) '${d.theme.trim()} theme',
       if (d.notes.trim().isNotEmpty) d.notes.trim(),
     ];
@@ -153,7 +163,7 @@ class _ReviewStepState extends State<ReviewStep> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'The bakery will review this and send you a quote. Nothing is charged now.',
+                  'The bakery decides the final price and delivery cost, then sends you a quote. No platform fee is charged.',
                   style: TextStyle(color: AppColors.ink2),
                 ),
                 const SizedBox(height: 18),
@@ -170,19 +180,16 @@ class _ReviewStepState extends State<ReviewStep> {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: d.aiImageBytes != null
-                            ? Image.memory(
-                                d.aiImageBytes!,
-                                fit: BoxFit.cover,
-                              )
+                            ? Image.memory(d.aiImageBytes!, fit: BoxFit.cover)
                             : (d.designImageUrl!.startsWith('assets/')
-                                ? Image.asset(
-                                    d.designImageUrl!,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.network(
-                                    d.designImageUrl!,
-                                    fit: BoxFit.cover,
-                                  )),
+                                  ? Image.asset(
+                                      d.designImageUrl!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.network(
+                                      d.designImageUrl!,
+                                      fit: BoxFit.cover,
+                                    )),
                       )
                     else if (d.useBuilder && d.groups.isNotEmpty)
                       Container(
@@ -226,9 +233,7 @@ class _ReviewStepState extends State<ReviewStep> {
                             onPressed: () => _editStep(
                               d.isAiDesigned
                                   ? 'custom/ai'
-                                  : (d.useBuilder
-                                      ? 'custom/2'
-                                      : 'custom/3'),
+                                  : (d.useBuilder ? 'custom/2' : 'custom/3'),
                             ),
                             child: const Text('Edit design'),
                           ),
@@ -245,22 +250,16 @@ class _ReviewStepState extends State<ReviewStep> {
                 _Row(
                   label: 'When and where',
                   value:
-                      '${d.dueDate != null ? dateTimeLabel(d.dueDate!) : 'Date not set'}, ${d.fulfilment == 'PICKUP' ? 'pickup' : (d.deliveryAddress.trim().isNotEmpty ? 'delivered to ${d.deliveryAddress.trim()}${d.deliveryArea != null ? ', ${d.deliveryArea}' : ''}' : 'delivery${d.deliveryArea != null ? ' to ${d.deliveryArea}' : ''}')}',
+                      '${d.dueDate != null ? dateTimeLabel(d.dueDate!) : 'Date not set'}, ${d.fulfilment == 'PICKUP' ? 'pickup' : 'delivery to ${zone?.label ?? 'selected area'} · ${d.deliveryAddress.trim()}${d.deliveryLandmark.trim().isEmpty ? '' : ' · ${d.deliveryLandmark.trim()}'}'}',
                   onEdit: () => _editStep('custom/4'),
                 ),
                 _Row(label: 'Bakery', value: d.bakery.name),
                 const SizedBox(height: 16),
-                if (estimate != null)
-                  _sum('Estimate', money(estimate, currency), bold: true),
                 if (d.budget != null)
-                  _sum('Your budget', money(d.budget!, currency)),
+                  _sum('Your budget', money(d.budget!, d.bakery.currency)),
                 const SizedBox(height: 6),
                 Text(
-                  estimate != null &&
-                          d.budget != null &&
-                          estimate > d.budget!
-                      ? 'The estimate is above your budget. The bakery can suggest changes when they send their quote.'
-                      : 'The bakery looks at your design and sends you a quote in the app.',
+                  'Your budget is a guide only. The bakery confirms the price before you accept.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 if (_error != null) ...[
@@ -285,9 +284,7 @@ class _ReviewStepState extends State<ReviewStep> {
         note: "You'll get a quote in the app. Nothing is charged now.",
         child: FilledButton(
           onPressed: _sending ? null : _send,
-          child: Text(
-            _sending ? 'Sending…' : 'Send to ${d.bakery.name}',
-          ),
+          child: Text(_sending ? 'Sending…' : 'Send to ${d.bakery.name}'),
         ),
       ),
     );
@@ -312,11 +309,7 @@ class _ReviewStepState extends State<ReviewStep> {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({
-    required this.label,
-    required this.value,
-    this.onEdit,
-  });
+  const _Row({required this.label, required this.value, this.onEdit});
 
   final String label;
   final String value;
@@ -338,10 +331,7 @@ class _Row extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.muted,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
                 const SizedBox(height: 3),
                 Text(value, style: const TextStyle(fontSize: 15)),
@@ -351,10 +341,7 @@ class _Row extends StatelessWidget {
           if (onEdit != null)
             TextButton(
               onPressed: onEdit,
-              child: Semantics(
-                label: 'Edit $label',
-                child: const Text('Edit'),
-              ),
+              child: Semantics(label: 'Edit $label', child: const Text('Edit')),
             ),
         ],
       ),

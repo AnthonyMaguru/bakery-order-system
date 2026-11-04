@@ -20,10 +20,11 @@ export const TYPE_LABELS: Record<OrderType, string> = {
 }
 
 export const needsQuote = (type: OrderType) => type !== 'STANDARD'
+export const requiresQuote = (order: Pick<OrderBase, 'type' | 'fulfilment'>) => needsQuote(order.type) || order.fulfilment === 'DELIVERY'
 
 // The progress steps shown on an order. Ready made orders skip the quote.
-export function stepsFor(type: OrderType): OrderStatus[] {
-  return needsQuote(type)
+export function stepsFor(type: OrderType, fulfilment: 'PICKUP' | 'DELIVERY' = 'PICKUP'): OrderStatus[] {
+  return needsQuote(type) || fulfilment === 'DELIVERY'
     ? ['SUBMITTED', 'QUOTED', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED']
     : ['SUBMITTED', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED']
 }
@@ -32,7 +33,7 @@ export function stepsFor(type: OrderType): OrderStatus[] {
 export function nextAction(order: Pick<OrderBase, 'status' | 'type' | 'fulfilment'>): { label: string; status: OrderStatus } | null {
   switch (order.status) {
     case 'SUBMITTED':
-      return needsQuote(order.type) ? null : { label: 'Confirm order', status: 'CONFIRMED' }
+      return requiresQuote(order) ? null : { label: 'Confirm order', status: 'CONFIRMED' }
     case 'CONFIRMED':
       return { label: 'Start making it', status: 'PREPARING' }
     case 'PREPARING':
@@ -45,10 +46,10 @@ export function nextAction(order: Pick<OrderBase, 'status' | 'type' | 'fulfilmen
 }
 
 // A short line under the status saying what happens next.
-export function waitingFor(order: Pick<OrderBase, 'status' | 'type'>): string {
+export function waitingFor(order: Pick<OrderBase, 'status' | 'type' | 'fulfilment'>): string {
   switch (order.status) {
     case 'SUBMITTED':
-      return needsQuote(order.type) ? 'Needs a quote' : 'Needs confirming'
+      return requiresQuote(order) ? 'Needs a quote' : 'Needs confirming'
     case 'QUOTED':
       return 'Waiting for the customer'
     default:

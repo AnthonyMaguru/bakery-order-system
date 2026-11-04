@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:bakery_orders/core/api_client.dart';
 import 'package:bakery_orders/features/outbox/outbox.dart';
@@ -12,12 +13,24 @@ class FakeBackend {
   bool online = false;
   String? refuseWith;
   final posted = <Map<String, dynamic>>[];
+  int uploadedPhotos = 0;
 
   late final client = MockClient((request) async {
-    if (!online) throw http.ClientException('No connection');
+    if (!online) {
+      throw http.ClientException('No connection');
+    }
+    if (request.url.path.endsWith('/uploads')) {
+      uploadedPhotos++;
+      return http.Response(
+        jsonEncode({'id': 'photo-1', 'url': 'https://example.test/photo-1'}),
+        201,
+      );
+    }
     final body = jsonDecode(request.body) as Map<String, dynamic>;
     posted.add(body);
-    if (refuseWith != null) return http.Response(jsonEncode({'error': refuseWith}), 409);
+    if (refuseWith != null) {
+      return http.Response(jsonEncode({'error': refuseWith}), 409);
+    }
     return http.Response(jsonEncode(orderJson), 201);
   });
 }
@@ -43,42 +56,104 @@ void main() {
     backend = FakeBackend();
     api = ApiClient(client: backend.client);
     Outbox.instance.reset();
+    Outbox.instance.setAccountForTesting('test-customer');
   });
 
   test('sends straight away when online', () async {
     backend.online = true;
-    final result = await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
+    final result = await Outbox.instance.submit(
+      {'bakeryId': 'b1'},
+      title: 'Birthday cake',
+      bakeryName: 'Sweet Crumbs',
+    );
     expect(result, isA<Sent>());
     expect((result as Sent).order.number, 1043);
     expect(Outbox.instance.items, isEmpty);
   });
 
-  test('keeps the order on the phone when offline, then sends it with the same id', () async {
-    final result = await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
-    expect(result, isA<Queued>());
-    expect(Outbox.instance.waiting, hasLength(1));
+  test(
+    'keeps the order on the phone when offline, then sends it with the same id',
+    () async {
+      final result = await Outbox.instance.submit(
+        {'bakeryId': 'b1'},
+        title: 'Birthday cake',
+        bakeryName: 'Sweet Crumbs',
+      );
+      expect(result, isA<Queued>());
+      expect(Outbox.instance.waiting, hasLength(1));
 
-    // Still offline: nothing is lost.
-    expect(await Outbox.instance.flush(), 0);
-    expect(Outbox.instance.waiting, hasLength(1));
+      // Still offline: nothing is lost.
+      expect(await Outbox.instance.flush(), 0);
+      expect(Outbox.instance.waiting, hasLength(1));
 
-    backend.online = true;
-    expect(await Outbox.instance.flush(), 1);
-    expect(Outbox.instance.items, isEmpty);
-    expect(backend.posted.single['clientRequestId'], (result as Queued).item.clientRequestId);
-  });
+      backend.online = true;
+      expect(await Outbox.instance.flush(), 1);
+      expect(Outbox.instance.items, isEmpty);
+      expect(
+        backend.posted.single['clientRequestId'],
+        (result as Queued).item.clientRequestId,
+      );
+    },
+  );
+
+  test(
+    'keeps image bytes offline and uploads them before retrying the order',
+    () async {
+      final result = await Outbox.instance.submit(
+        {'bakeryId': 'b1'},
+        title: 'Birthday cake',
+        bakeryName: 'Sweet Crumbs',
+        attachments: [
+          OutboxAttachment(
+            field: 'designImageUrl',
+            bytes: Uint8List.fromList([1, 2, 3]),
+            contentType: 'image/png',
+          ),
+        ],
+      );
+      expect(result, isA<Queued>());
+      expect((result as Queued).item.attachments, hasLength(1));
+
+      backend.online = true;
+      expect(await Outbox.instance.flush(), 1);
+      expect(backend.uploadedPhotos, 1);
+      expect(
+        backend.posted.single['designImageUrl'],
+        'https://example.test/photo-1',
+      );
+      expect(Outbox.instance.items, isEmpty);
+    },
+  );
 
   test('survives the app closing', () async {
-    await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
+    await Outbox.instance.submit(
+      {'bakeryId': 'b1'},
+      title: 'Birthday cake',
+      bakeryName: 'Sweet Crumbs',
+    );
     Outbox.instance.reset();
     expect(Outbox.instance.items, isEmpty);
 
+    Outbox.instance.setAccountForTesting('test-customer');
     await Outbox.instance.start();
     expect(Outbox.instance.waiting, hasLength(1));
   });
 
-  test('backs off after repeated network failures', () async {
+  test('keeps queued orders isolated between signed-in accounts', () async {
     await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
+    Outbox.instance.reset();
+
+    Outbox.instance.setAccountForTesting('different-customer');
+    await Outbox.instance.start();
+    expect(Outbox.instance.items, isEmpty);
+  });
+
+  test('backs off after repeated network failures', () async {
+    await Outbox.instance.submit(
+      {'bakeryId': 'b1'},
+      title: 'Birthday cake',
+      bakeryName: 'Sweet Crumbs',
+    );
     expect(await Outbox.instance.flush(), 0);
     expect(Outbox.instance.retryDelay, const Duration(seconds: 60));
 
@@ -88,13 +163,25 @@ void main() {
   });
 
   test('keeps the reason when the bakery refuses a saved order', () async {
-    await Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs');
+    await Outbox.instance.submit(
+      {'bakeryId': 'b1'},
+      title: 'Birthday cake',
+      bakeryName: 'Sweet Crumbs',
+    );
     backend
       ..online = true
       ..refuseWith = 'That day is fully booked. Please pick another date';
     await Outbox.instance.flush();
     expect(Outbox.instance.items.single.error, contains('fully booked'));
-    expect(Outbox.instance.waiting, isEmpty, reason: "a refused order isn't retried forever");
+    expect(
+      Outbox.instance.waiting,
+      isEmpty,
+      reason: "a refused order isn't retried forever",
+    );
+
+    backend.refuseWith = null;
+    await Outbox.instance.retry(Outbox.instance.items.single.clientRequestId);
+    expect(Outbox.instance.items, isEmpty);
   });
 
   test('shows the bakery refusing a new order instead of saving it', () async {
@@ -102,7 +189,11 @@ void main() {
       ..online = true
       ..refuseWith = 'That day is fully booked';
     expect(
-      () => Outbox.instance.submit({'bakeryId': 'b1'}, title: 'Birthday cake', bakeryName: 'Sweet Crumbs'),
+      () => Outbox.instance.submit(
+        {'bakeryId': 'b1'},
+        title: 'Birthday cake',
+        bakeryName: 'Sweet Crumbs',
+      ),
       throwsA(isA<ApiException>()),
     );
   });

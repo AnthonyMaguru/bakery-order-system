@@ -12,10 +12,11 @@ const statusLabels = {
 const customerCancellable = {'SUBMITTED', 'QUOTED', 'CONFIRMED'};
 
 class Quotation {
-  Quotation({required this.id, required this.amount, required this.createdAt, this.note, this.acceptedAt});
+  Quotation({required this.id, required this.amount, required this.deliveryAmount, required this.createdAt, this.note, this.acceptedAt});
 
   final String id;
   final int amount;
+  final int deliveryAmount;
   final DateTime createdAt;
   final String? note;
   final DateTime? acceptedAt;
@@ -23,6 +24,7 @@ class Quotation {
   factory Quotation.fromJson(Map<String, dynamic> json) => Quotation(
         id: json['id'] as String,
         amount: json['amount'] as int,
+        deliveryAmount: json['deliveryAmount'] as int? ?? 0,
         createdAt: DateTime.parse(json['createdAt'] as String),
         note: json['note'] as String?,
         acceptedAt: json['acceptedAt'] == null ? null : DateTime.parse(json['acceptedAt'] as String),
@@ -67,10 +69,15 @@ class Order {
     this.notes,
     this.flavour,
     this.budget,
-    this.estimate,
     this.total,
-    this.deliveryArea,
+    this.deliveryZoneName,
     this.deliveryAddress,
+    this.deliveryLandmark,
+    this.deliveryAmount = 0,
+    this.reviewId,
+    this.reviewRating,
+    this.reviewBody,
+    this.reviewResponse,
     this.cancelReason,
     this.cancelledBy,
     this.bakeryPhone,
@@ -103,10 +110,15 @@ class Order {
   final String? notes;
   final String? flavour;
   final int? budget;
-  final int? estimate;
   final int? total;
-  final String? deliveryArea;
+  final String? deliveryZoneName;
   final String? deliveryAddress;
+  final String? deliveryLandmark;
+  final int deliveryAmount;
+  final String? reviewId;
+  final int? reviewRating;
+  final String? reviewBody;
+  final String? reviewResponse;
   final String? cancelReason;
   final String? cancelledBy;
   final String? bakeryPhone;
@@ -114,7 +126,7 @@ class Order {
   final String? designImageUrl;
   final List<String> inspirationImageUrls;
 
-  bool get needsQuote => type != 'STANDARD';
+  bool get needsQuote => type != 'STANDARD' || fulfilment == 'DELIVERY';
   Quotation? get latestQuote => quotations.isEmpty ? null : quotations.first;
 
   /// "Birthday cake", or the product name for a ready made order.
@@ -150,10 +162,15 @@ class Order {
       notes: json['notes'] as String?,
       flavour: json['flavour'] as String?,
       budget: json['budget'] as int?,
-      estimate: json['estimate'] as int?,
       total: json['total'] as int?,
-      deliveryArea: json['deliveryArea'] as String?,
+      deliveryZoneName: json['deliveryZoneName'] as String?,
       deliveryAddress: json['deliveryAddress'] as String?,
+      deliveryLandmark: json['deliveryLandmark'] as String?,
+      deliveryAmount: json['deliveryAmount'] as int? ?? 0,
+      reviewId: (json['review'] as Map<String, dynamic>?)?['id'] as String?,
+      reviewRating: (json['review'] as Map<String, dynamic>?)?['rating'] as int?,
+      reviewBody: (json['review'] as Map<String, dynamic>?)?['body'] as String?,
+      reviewResponse: (json['review'] as Map<String, dynamic>?)?['response'] as String?,
       cancelReason: json['cancelReason'] as String?,
       cancelledBy: json['cancelledBy'] as String?,
       designImageUrl: json['designImageUrl'] as String?,

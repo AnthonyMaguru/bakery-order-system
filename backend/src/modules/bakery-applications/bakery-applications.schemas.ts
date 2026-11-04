@@ -6,6 +6,9 @@ export const BakeryApplicationInput = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().min(5).max(30),
   city: z.string().trim().min(2).max(80),
+  region: z.string().trim().min(2).max(80),
+  municipality: z.string().trim().min(2).max(80),
+  division: z.string().trim().max(80).optional(),
   notes: z.string().trim().max(1000).optional(),
 });
 

@@ -43,6 +43,9 @@ export function parseEnv(input: NodeJS.ProcessEnv = process.env) {
     if (!parsed.PUBLIC_API_URL || new URL(parsed.PUBLIC_API_URL).protocol !== "https:") {
       throw new Error("PUBLIC_API_URL must be an HTTPS URL in production.");
     }
+    if (!parsed.GOOGLE_APPLICATION_CREDENTIALS) {
+      throw new Error("GOOGLE_APPLICATION_CREDENTIALS is required in production.");
+    }
   }
 
   return parsed;

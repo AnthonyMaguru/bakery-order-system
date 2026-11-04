@@ -10,14 +10,12 @@
     "country": "UG",
     "currency": "UGX",
     "imageUrl": null,
-    "deliveryAreas": [
-      "Kisaasi",
-      "Ntinda",
-      "Kyanja",
-      "Bukoto",
-      "Naalya"
+    "region": "Central Region",
+    "municipality": "Kampala",
+    "deliveryZones": [
+      {"id": "zone-ntinda", "region": "Central Region", "municipality": "Kampala", "name": "Ntinda"},
+      {"id": "zone-kyanja", "region": "Central Region", "municipality": "Kampala", "name": "Kyanja"}
     ],
-    "deliveryFee": 5000,
     "pickupAvailable": true,
     "acceptsCash": true,
     "acceptsMobileMoney": true,
@@ -36,12 +34,12 @@
     "country": "UG",
     "currency": "UGX",
     "imageUrl": null,
-    "deliveryAreas": [
-      "Bukoto",
-      "Ntinda",
-      "Kamwokya"
+    "region": "Central Region",
+    "municipality": "Kampala",
+    "deliveryZones": [
+      {"id": "zone-bukoto", "region": "Central Region", "municipality": "Kampala", "name": "Bukoto"},
+      {"id": "zone-ntinda-mamas", "region": "Central Region", "municipality": "Kampala", "name": "Ntinda"}
     ],
-    "deliveryFee": 7000,
     "pickupAvailable": true,
     "acceptsCash": true,
     "acceptsMobileMoney": true,

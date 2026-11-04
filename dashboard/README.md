@@ -22,12 +22,12 @@ The backend must be running (see `../backend`) and seeded (`npm run db:seed`).
 | Route | What staff do there |
 |---|---|
 | `/orders` | All orders, soonest due first, with status tabs, search, and a warning for orders due soon that nobody has touched |
-| `/orders/:id` | What the customer asked for, messages, the quote (with the builder estimate and their budget), payments, the next step, cancelling |
+| `/orders/:id` | What the customer asked for, messages, bakery quote, customer review, payments, the next step, cancelling |
 | `/schedule` | Two weeks of custom cake slots, each day's orders, blocking days, and the daily limits |
 | `/products` | Products shown in the app, hide or show them, add and edit, with photos |
 | `/builder` | Cake builder options and prices, and which stock each uses |
 | `/stock` | Private stock counts; options linked to empty stock hide themselves |
-| `/settings` | Profile, delivery areas and fee, payment methods, staff |
+| `/settings` | Profile, structured delivery zones, payment methods, staff |
 
 ## Layout
 

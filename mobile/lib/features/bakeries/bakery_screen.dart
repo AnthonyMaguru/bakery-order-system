@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/cache.dart';
+import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
@@ -55,7 +56,10 @@ class _BakeryScreenState extends State<BakeryScreen> {
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.okSoft,
                       borderRadius: BorderRadius.circular(12),
@@ -129,7 +133,9 @@ class _BakeryScreenState extends State<BakeryScreen> {
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFA62B52).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFA62B52,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -159,7 +165,9 @@ class _BakeryScreenState extends State<BakeryScreen> {
 
                   // Tab Views
                   Expanded(
-                    child: snapshot.connectionState == ConnectionState.waiting && cached == null
+                    child:
+                        snapshot.connectionState == ConnectionState.waiting &&
+                            cached == null
                         ? const Center(child: CircularProgressIndicator())
                         : TabBarView(
                             children: [
@@ -258,7 +266,11 @@ class _VisualBakeryHero extends StatelessWidget {
                         ],
                       ),
                       child: const Center(
-                        child: Icon(Icons.storefront_rounded, color: AppColors.accent, size: 26),
+                        child: Icon(
+                          Icons.storefront_rounded,
+                          color: AppColors.accent,
+                          size: 26,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -279,8 +291,12 @@ class _VisualBakeryHero extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            bakery.about ?? 'Artisanal cakes, pastries & custom bakes',
-                            style: const TextStyle(fontSize: 12, color: Colors.white70),
+                            bakery.about ??
+                                'Artisanal cakes, pastries & custom bakes',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -292,13 +308,17 @@ class _VisualBakeryHero extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.amber, size: 14),
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.amber,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        bakery.deliveryAreas.isEmpty
-                            ? '${bakery.city} · In-store pickup'
-                            : '${bakery.city} · Delivers to ${bakery.deliveryAreas.take(3).join(', ')}',
+                        bakery.deliveryZones.isEmpty
+                            ? '${bakery.municipality}, ${bakery.region} · In-store pickup'
+                            : '${bakery.municipality}, ${bakery.region} · Delivers to ${bakery.deliveryZones.take(3).map((zone) => zone.name).join(', ')}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white,
@@ -347,7 +367,8 @@ class _MenuTabState extends State<_MenuTab> {
       for (final c in categoryLabels.keys)
         if (widget.products.any((p) => p.category == c)) c,
     ];
-    final category = _category ?? (categories.isEmpty ? null : categories.first);
+    final category =
+        _category ?? (categories.isEmpty ? null : categories.first);
     final shown = widget.products.where((p) => p.category == category).toList();
 
     if (widget.products.isEmpty) {
@@ -367,11 +388,18 @@ class _MenuTabState extends State<_MenuTab> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.cake_outlined, size: 48, color: AppColors.muted),
+                    const Icon(
+                      Icons.cake_outlined,
+                      size: 48,
+                      color: AppColors.muted,
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'No ready-made cakes currently listed',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 6),
@@ -417,15 +445,21 @@ class _MenuTabState extends State<_MenuTab> {
                         onSelected: (_) => setState(() => _category = c),
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          fontWeight: c == category ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: c == category
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: c == category ? Colors.white : AppColors.ink,
                         ),
                         selectedColor: AppColors.accent,
                         backgroundColor: AppColors.surface,
                         side: BorderSide(
-                          color: c == category ? AppColors.accent : AppColors.line,
+                          color: c == category
+                              ? AppColors.accent
+                              : AppColors.line,
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                     ),
                 ],
@@ -445,10 +479,8 @@ class _MenuTabState extends State<_MenuTab> {
               crossAxisSpacing: 12,
               childAspectRatio: 0.74,
             ),
-            itemBuilder: (context, i) => _GourmetProductTile(
-              product: shown[i],
-              bakery: widget.bakery,
-            ),
+            itemBuilder: (context, i) =>
+                _GourmetProductTile(product: shown[i], bakery: widget.bakery),
           ),
         ],
       ),
@@ -506,7 +538,10 @@ class _GourmetProductTile extends StatelessWidget {
                         top: 8,
                         left: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.92),
                             borderRadius: BorderRadius.circular(6),
@@ -636,7 +671,11 @@ class _CustomStudioTab extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 26),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -663,7 +702,7 @@ class _CustomStudioTab extends StatelessWidget {
 
               const SizedBox(height: 14),
               const Text(
-                'Build your dream cake from scratch. Pick tiers, shapes, flavours, piping colours, and bespoke cake messages with real-time price estimates.',
+                'Build your dream cake from scratch. Pick tiers, shapes, flavours, piping colours, and bespoke cake messages. The bakery will confirm the final price.',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -692,12 +731,15 @@ class _CustomStudioTab extends StatelessWidget {
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.accent,
                   minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: () async {
                   if (!await ensureSignedIn(context)) return;
                   if (!context.mounted) return;
-                  final draft = CustomOrderDraft(bakery: bakery)..isAiDesigned = true;
+                  final draft = CustomOrderDraft(bakery: bakery)
+                    ..isAiDesigned = true;
                   Navigator.of(context).push(AiCakeStudioStep.route(draft));
                 },
                 icon: const Icon(Icons.auto_awesome, size: 18),
@@ -714,7 +756,9 @@ class _CustomStudioTab extends StatelessWidget {
                   foregroundColor: Colors.white,
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
                   minimumSize: const Size.fromHeight(44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: () async {
                   if (!await ensureSignedIn(context)) return;
@@ -742,7 +786,8 @@ class _CustomStudioTab extends StatelessWidget {
         _StepRow(
           number: '1',
           title: 'Design your brief',
-          subtitle: 'Select tiers, shape, cake sponge, and icing flavours with an instant guide price.',
+          subtitle:
+              'Select tiers, shape, cake sponge, and icing flavours with an instant guide price.',
         ),
         const SizedBox(height: 10),
         _StepRow(
@@ -756,7 +801,8 @@ class _CustomStudioTab extends StatelessWidget {
         _StepRow(
           number: '3',
           title: 'Quote & Direct Chat',
-          subtitle: '${bakery.name} reviews your brief, sends your quote, and chats directly with you.',
+          subtitle:
+              '${bakery.name} reviews your brief, sends your quote, and chats directly with you.',
         ),
       ],
     );
@@ -843,12 +889,19 @@ class _StepRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12, height: 1.35),
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -886,17 +939,38 @@ class _AboutDeliveryTab extends StatelessWidget {
             children: [
               Text(
                 'About ${bakery.name}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                bakery.about ?? 'Passionate artisans baking celebration cakes and pastries with love.',
-                style: const TextStyle(fontSize: 13, color: AppColors.ink2, height: 1.45),
+                bakery.about ??
+                    'Passionate artisans baking celebration cakes and pastries with love.',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.ink2,
+                  height: 1.45,
+                ),
               ),
+              if (bakery.reviewCount > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '★ ${bakery.averageRating?.toStringAsFixed(1) ?? '—'} · ${bakery.reviewCount} verified reviews',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
 
+        const SizedBox(height: 12),
+        _ReviewsCard(bakery: bakery),
         const SizedBox(height: 12),
 
         // Delivery Card
@@ -915,21 +989,27 @@ class _AboutDeliveryTab extends StatelessWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.local_shipping_outlined, color: AppColors.accent, size: 20),
+                      Icon(
+                        Icons.local_shipping_outlined,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
                       SizedBox(width: 8),
-                      Text('Delivery Zones', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                      Text(
+                        'Delivery Zones',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
-                  ),
-                  Text(
-                    'Fee: ${money(bakery.deliveryFee, bakery.currency)}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.accent),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              if (bakery.deliveryAreas.isEmpty)
+              if (bakery.deliveryZones.isEmpty)
                 const Text(
-                  'No delivery areas specified. Please select pickup at checkout.',
+                  'No delivery zones specified. Please select pickup at checkout.',
                   style: TextStyle(fontSize: 13, color: AppColors.muted),
                 )
               else
@@ -937,16 +1017,23 @@ class _AboutDeliveryTab extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    for (final a in bakery.deliveryAreas)
+                    for (final a in bakery.deliveryZones)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.sand,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          a,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.ink2),
+                          a.label,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.ink2,
+                          ),
                         ),
                       ),
                   ],
@@ -970,9 +1057,16 @@ class _AboutDeliveryTab extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.storefront_outlined, color: AppColors.accent, size: 20),
+                  Icon(
+                    Icons.storefront_outlined,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
-                  Text('In-Store Collection', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(
+                    'In-Store Collection',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -992,8 +1086,12 @@ class _AboutDeliveryTab extends StatelessWidget {
               if (bakery.handoverTimes.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  'Collection & Delivery times: ${bakery.handoverTimes.join(' · ')}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+                  'Collection & Delivery window: ${timeWindowLabel(bakery.parsedHandoverTimes) ?? 'To be confirmed'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.accent,
+                  ),
                 ),
               ],
               const SizedBox(height: 6),
@@ -1020,9 +1118,16 @@ class _AboutDeliveryTab extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.payments_outlined, color: AppColors.accent, size: 20),
+                  Icon(
+                    Icons.payments_outlined,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
-                  Text('Payment Methods', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Payment Methods',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -1031,23 +1136,41 @@ class _AboutDeliveryTab extends StatelessWidget {
                   if (bakery.acceptsCash)
                     Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.ground,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.line),
                       ),
-                      child: const Text('Cash on Delivery', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      child: const Text(
+                        'Cash on Delivery',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   if (bakery.acceptsMobileMoney)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.ground,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppColors.line),
                       ),
-                      child: const Text('Mobile Money (MTN / Airtel)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      child: const Text(
+                        'Mobile Money (MTN / Airtel)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -1057,4 +1180,78 @@ class _AboutDeliveryTab extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ReviewsCard extends StatelessWidget {
+  const _ReviewsCard({required this.bakery});
+
+  final Bakery bakery;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder(
+    future: api.get('/bakeries/${bakery.id}/reviews'),
+    builder: (context, snapshot) {
+      final reviews = (snapshot.data as List<dynamic>?) ?? const [];
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Customer reviews',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            if (snapshot.hasError)
+              const Text(
+                'Reviews are unavailable right now.',
+                style: TextStyle(color: AppColors.muted),
+              )
+            else if (snapshot.connectionState == ConnectionState.waiting)
+              const LinearProgressIndicator()
+            else if (reviews.isEmpty)
+              const Text(
+                'No verified reviews yet.',
+                style: TextStyle(color: AppColors.muted),
+              )
+            else
+              for (final entry in reviews.take(12))
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '★ ${entry['rating']} · Verified order',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                      if ((entry['body'] as String?)?.isNotEmpty == true)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(entry['body'] as String),
+                        ),
+                      if ((entry['response'] as String?)?.isNotEmpty == true)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 10),
+                          child: Text(
+                            'Bakery: ${entry['response']}',
+                            style: const TextStyle(color: AppColors.ink2),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+          ],
+        ),
+      );
+    },
+  );
 }

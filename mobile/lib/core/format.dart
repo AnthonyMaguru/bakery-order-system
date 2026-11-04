@@ -2,16 +2,42 @@
 // which for the pilot is the bakery's (Africa/Kampala).
 
 const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 /// "UGX 165,000". Amounts are whole units of the bakery's currency.
 String money(int amount, String currency) {
   final digits = amount.abs().toString();
-  final grouped = digits.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  final grouped = digits.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
   return '$currency ${amount < 0 ? '-' : ''}$grouped';
 }
 
@@ -26,6 +52,17 @@ String timeLabel(DateTime date) {
   final d = date.toLocal();
   final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
   return '$hour:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'am' : 'pm'}';
+}
+
+/// "9:00 am – 5:00 pm" for the bakery's configured handover window.
+String? timeWindowLabel(List<(int, int)> times) {
+  if (times.isEmpty) return null;
+  final sorted = times.toList()
+    ..sort((a, b) => (a.$1 * 60 + a.$2).compareTo(b.$1 * 60 + b.$2));
+  String label((int, int) time) =>
+      timeLabel(DateTime(2000, 1, 1, time.$1, time.$2));
+  if (sorted.length == 1) return label(sorted.single);
+  return '${label(sorted.first)} – ${label(sorted.last)}';
 }
 
 /// "Sat 7 Nov, 2:00 pm"

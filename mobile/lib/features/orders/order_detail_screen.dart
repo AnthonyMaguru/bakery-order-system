@@ -19,7 +19,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   late Future<Order> _order = _load();
   final _message = TextEditingController();
   final _messageFocus = FocusNode();
+  final _reviewBody = TextEditingController();
   bool _sending = false;
+  bool _sendingReview = false;
+  int _reviewRating = 5;
 
   Future<Order> _load() async => Order.fromJson(
     await api.get('/orders/${widget.orderId}') as Map<String, dynamic>,
@@ -36,6 +39,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   void dispose() {
     _message.dispose();
     _messageFocus.dispose();
+    _reviewBody.dispose();
     super.dispose();
   }
 
@@ -54,6 +58,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _sendReview(Order order) async {
+    setState(() => _sendingReview = true);
+    try {
+      await api.post('/orders/${order.id}/review', {'rating': _reviewRating, 'body': _reviewBody.text.trim()});
+      _reviewBody.clear();
+      _reload();
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sendingReview = false);
+    }
+  }
+
   Future<void> _acceptQuote(Order order, Quotation quote) async {
     final yes = await showModalBottomSheet<bool>(
       context: context,
@@ -66,8 +83,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             'Where',
             order.fulfilment == 'PICKUP'
                 ? 'Pickup'
-                : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}',
+                : 'Delivery to ${order.deliveryAddress ?? 'customer address'}${order.deliveryZoneName == null ? '' : ', ${order.deliveryZoneName}'}',
           ),
+          if (quote.deliveryAmount > 0) _Detail('Delivery', money(quote.deliveryAmount, order.currency)),
           const Divider(height: 28),
           const Text(
             'What happens next',
@@ -289,6 +307,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
         if (order.status != 'CANCELLED') _Progress(order: order),
+        if (order.status == 'COMPLETED') _ReviewSection(
+          rating: order.reviewRating,
+          body: _reviewBody,
+          reviewBody: order.reviewBody,
+          response: order.reviewResponse,
+          selectedRating: _reviewRating,
+          sending: _sendingReview,
+          onRating: (value) => setState(() => _reviewRating = value),
+          onSubmit: () => _sendReview(order),
+        ),
         _Section(
           title: 'Your cake',
           child: Column(
@@ -302,7 +330,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Image.network(
                       order.designImageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     ),
                   ),
                 ),
@@ -472,7 +500,7 @@ class _OrderHero extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${dateTimeLabel(order.dueDate)} · ${order.fulfilment == 'PICKUP' ? 'Pickup' : 'Delivery to ${order.deliveryAddress ?? order.deliveryArea}'}',
+            '${dateTimeLabel(order.dueDate)} · ${order.fulfilment == 'PICKUP' ? 'Pickup' : 'Delivery to ${order.deliveryAddress ?? 'customer address'}${order.deliveryZoneName == null ? '' : ', ${order.deliveryZoneName}'}'}',
             style: const TextStyle(fontSize: 14, color: AppColors.ink2),
           ),
           const SizedBox(height: 4),
@@ -484,6 +512,80 @@ class _OrderHero extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ReviewSection extends StatelessWidget {
+  const _ReviewSection({
+    required this.rating,
+    required this.body,
+    required this.reviewBody,
+    required this.response,
+    required this.selectedRating,
+    required this.sending,
+    required this.onRating,
+    required this.onSubmit,
+  });
+
+  final int? rating;
+  final TextEditingController body;
+  final String? reviewBody;
+  final String? response;
+  final int selectedRating;
+  final bool sending;
+  final ValueChanged<int> onRating;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) => _Section(
+        title: 'Bakery review',
+        child: rating != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      for (var i = 1; i <= 5; i++)
+                        Icon(Icons.star, size: 20, color: i <= rating! ? AppColors.accent : AppColors.lineStrong),
+                      const SizedBox(width: 8),
+                      const Text('Thanks for sharing your experience.'),
+                    ],
+                  ),
+                  if (reviewBody?.isNotEmpty == true) ...[
+                    const SizedBox(height: 8),
+                    Text(reviewBody!),
+                  ],
+                  if (response?.isNotEmpty == true) ...[
+                    const SizedBox(height: 12),
+                    Text('Bakery response: $response', style: const TextStyle(color: AppColors.ink2)),
+                  ],
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your order is complete. How was your experience?'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      for (var i = 1; i <= 5; i++)
+                        IconButton(
+                          tooltip: '$i star${i == 1 ? '' : 's'}',
+                          onPressed: sending ? null : () => onRating(i),
+                          icon: Icon(Icons.star, color: i <= selectedRating ? AppColors.accent : AppColors.lineStrong),
+                        ),
+                    ],
+                  ),
+                  TextField(
+                    controller: body,
+                    maxLength: 1000,
+                    maxLines: 3,
+                    decoration: const InputDecoration(hintText: 'Optional: tell others what you liked'),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(onPressed: sending ? null : onSubmit, child: Text(sending ? 'Submitting…' : 'Submit review')),
+                ],
+              ),
+      );
 }
 
 class _Progress extends StatelessWidget {

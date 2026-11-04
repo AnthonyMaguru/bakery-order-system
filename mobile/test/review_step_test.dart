@@ -25,8 +25,11 @@ void main() {
     'name': 'Sweet Crumbs Bakery',
     'city': 'Kampala',
     'currency': 'UGX',
-    'deliveryAreas': ['Ntinda', 'Kisaasi'],
-    'deliveryFee': 5000,
+    'region': 'Central Region',
+    'municipality': 'Kampala',
+    'deliveryZones': [
+      {'id': 'zone-1', 'region': 'Central Region', 'municipality': 'Kampala', 'name': 'Ntinda'},
+    ],
     'pickupAvailable': true,
     'acceptsCash': true,
     'acceptsMobileMoney': true,
@@ -38,7 +41,7 @@ void main() {
       ..occasion = 'Birthday'
       ..dueDate = DateTime(2026, 11, 10, 14, 0)
       ..fulfilment = 'DELIVERY'
-      ..deliveryArea = 'Ntinda'
+      ..deliveryZoneId = 'zone-1'
       ..deliveryAddress = 'Plot 12'
       ..isAiDesigned = true
       ..designImageUrl = 'http://example.com/cake.png'

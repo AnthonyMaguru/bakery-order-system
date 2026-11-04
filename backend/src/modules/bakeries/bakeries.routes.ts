@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireMember } from "../../lib/access.js";
 import { requireAuth } from "../../middleware/auth.js";
+import { prisma } from "../../lib/prisma.js";
 import { getCalendar, todayFor } from "./availability.service.js";
 import { AvailabilityQuery, BakeriesQuery, BakerySettingsUpdate, BlockedDateInput, MemberInput } from "./bakeries.schemas.js";
 import * as bakeries from "./bakeries.service.js";
@@ -52,6 +53,24 @@ bakeriesRouter.delete("/:bakeryId/members/:memberId", requireAuth, requireMember
 
 bakeriesRouter.get("/:bakeryId/blocked-dates", requireAuth, requireMember(), async (req, res) => {
   res.json(await bakeries.listBlockedDates(req.params.bakeryId));
+});
+
+bakeriesRouter.get("/:bakeryId/commission-summary", requireAuth, requireMember(), async (req, res) => {
+  const [total, settings] = await Promise.all([
+    prisma.order.aggregate({
+      where: { bakeryId: req.params.bakeryId, status: "COMPLETED" },
+      _sum: { commissionAmount: true },
+      _count: { _all: true },
+    }),
+    prisma.platformSettings.findUnique({ where: { id: "global" } }),
+  ]);
+  const bakery = await bakeries.getStaffBakery(req.params.bakeryId);
+  res.json({
+    commissionRateBps: settings?.commissionRateBps ?? null,
+    completedOrders: total._count._all,
+    accruedCommission: total._sum.commissionAmount ?? 0,
+    currency: bakery.currency,
+  });
 });
 
 bakeriesRouter.post("/:bakeryId/blocked-dates", requireAuth, requireMember(), async (req, res) => {

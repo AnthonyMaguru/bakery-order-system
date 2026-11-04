@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_settings/app_settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,9 @@ class Push {
       _ => PushStatus.notDetermined,
     };
   }
+
+  Future<void> openNotificationSettings() =>
+      AppSettings.openAppSettings(type: AppSettingsType.notification);
 
   /// Call after sign in: asks for permission, then registers this phone.
   Future<void> register() async {

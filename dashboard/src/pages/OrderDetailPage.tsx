@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { addComment, cancelOrder, getOrder, recordPayment, removePayment, sendQuotation, updateOrderStatus } from '../api/orders'
+import { respondToReview } from '../api/bakeries'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { PaymentBadge, StatusBadge } from '../components/StatusBadge'
@@ -13,7 +14,7 @@ import {
   canQuote,
   canRecordPayment,
   isOpen,
-  needsQuote,
+  requiresQuote,
   nextAction,
   orderTitle,
   STATUS_LABELS,
@@ -82,7 +83,7 @@ function OrderView({ order, onChange, reload }: { order: Order; onChange: (o: Or
           </div>
           <p style={{ color: 'var(--ink-2)' }}>
             {orderRef(order)} · {TYPE_LABELS[order.type]} · Due {formatDateTime(order.dueDate, tz)} ·{' '}
-            {order.fulfilment === 'PICKUP' ? 'Pickup' : `Delivery to ${order.deliveryArea}`}
+            {order.fulfilment === 'PICKUP' ? 'Pickup' : `Delivery to ${order.deliveryZoneName ?? 'customer address'}`}
           </p>
         </div>
         <div className="row">
@@ -113,6 +114,7 @@ function OrderView({ order, onChange, reload }: { order: Order; onChange: (o: Or
       <div className="split">
         <div className="split-main sections">
           <DesignSection order={order} />
+          {order.review && <OrderReviewSection review={order.review} onSaved={reload} />}
           <MessagesSection order={order} onSent={reload} />
         </div>
         <div className="split-side panel">
@@ -123,7 +125,7 @@ function OrderView({ order, onChange, reload }: { order: Order; onChange: (o: Or
             {order.customer.email && <span className="muted">{order.customer.email}</span>}
             {order.deliveryAddress && <span>{order.deliveryAddress}</span>}
           </section>
-          {needsQuote(order.type) && <QuoteSection order={order} onQuoted={reload} />}
+          {requiresQuote(order) && <QuoteSection order={order} onQuoted={reload} />}
           <PaymentSection order={order} onChange={updated} />
         </div>
       </div>
@@ -133,9 +135,52 @@ function OrderView({ order, onChange, reload }: { order: Order; onChange: (o: Or
   )
 }
 
+function OrderReviewSection({
+  review,
+  onSaved,
+}: {
+  review: NonNullable<Order['review']>
+  onSaved: () => void
+}) {
+  const { bakery } = useBakery()
+  const [response, setResponse] = useState(review.response ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!response.trim()) return setError('Write a response before saving.')
+    setSaving(true)
+    setError(null)
+    try {
+      await respondToReview(bakery.id, review.id, response.trim())
+      onSaved()
+    } catch (cause) {
+      setError((cause as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="stack-lg" aria-labelledby="review-h">
+      <h2 id="review-h">Customer review</h2>
+      <p className="strong">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)} · {formatDateTime(review.createdAt, bakery.timezone)}</p>
+      {review.body && <p>{review.body}</p>}
+      {review.response && <p className="alert alert-info"><strong>Your response:</strong> {review.response}</p>}
+      <form className="stack" onSubmit={submit}>
+        <label className="field" htmlFor="review-response">Reply publicly</label>
+        <textarea id="review-response" rows={3} maxLength={1000} value={response} onChange={(e) => setResponse(e.target.value)} />
+        {error && <p className="form-error" role="alert">{error}</p>}
+        <button type="submit" className="btn btn-outline" disabled={saving}>{saving ? 'Saving…' : 'Save response'}</button>
+      </form>
+    </section>
+  )
+}
+
 function Progress({ order }: { order: Order }) {
   if (order.status === 'CANCELLED') return null
-  const steps = stepsFor(order.type)
+  const steps = stepsFor(order.type, order.fulfilment)
   const current = steps.indexOf(order.status)
   return (
     <ol className="steps" aria-label="Order progress">
@@ -353,7 +398,8 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
   const toast = useToast()
   const latest = order.quotations[0]
   const accepted = order.quotations.find((q) => q.acceptedAt)
-  const [amount, setAmount] = useState(String(latest?.amount ?? order.estimate ?? ''))
+  const [amount, setAmount] = useState(String(latest?.amount ?? order.total ?? ''))
+  const [deliveryAmount, setDeliveryAmount] = useState(String(latest?.deliveryAmount ?? order.deliveryAmount ?? 0))
   const [note, setNote] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -373,9 +419,9 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
     )
   }
 
-  const priced = order.selections.filter((s) => s.price > 0)
   const value = Number(amount.replaceAll(',', ''))
-  const valid = Number.isInteger(value) && value > 0
+  const deliveryValue = Number(deliveryAmount.replaceAll(',', ''))
+  const valid = Number.isInteger(value) && value > 0 && Number.isInteger(deliveryValue) && deliveryValue >= 0 && deliveryValue <= value
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -386,7 +432,7 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
     setSending(true)
     setError(null)
     try {
-      await sendQuotation(order.id, value, note.trim())
+      await sendQuotation(order.id, value, deliveryValue, note.trim())
       setNote('')
       toast(`Quote sent. ${order.customer.name ?? 'The customer'} can now accept it in the app.`)
       onQuoted()
@@ -408,27 +454,8 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
         </p>
       )}
 
-      {order.estimate != null && (
-        <div className="sums">
-          <span className="strong" style={{ color: 'var(--ink)' }}>
-            Estimate from your builder prices
-          </span>
-          {priced.map((s) => (
-            <div key={s.id}>
-              <span>{s.optionName}</span>
-              <span>{formatMoney(s.price, order.currency)}</span>
-            </div>
-          ))}
-          <div className="total">
-            <span>Estimate</span>
-            <span>{formatMoney(order.estimate, order.currency)}</span>
-          </div>
-        </div>
-      )}
       {order.budget != null && (
-        <p className="small strong" style={{ color: order.estimate != null && order.estimate > order.budget ? 'var(--warn)' : 'var(--ink-2)' }}>
-          The customer's budget is {formatMoney(order.budget, order.currency)}.
-        </p>
+        <p className="small muted">Customer’s stated budget: {formatMoney(order.budget, order.currency)}.</p>
       )}
 
       <form className="stack-lg" onSubmit={submit} noValidate>
@@ -438,6 +465,16 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
             <span>{order.currency}</span>
             <input id="quote-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={!!error} aria-describedby="quote-error" />
           </div>
+          {order.fulfilment === 'DELIVERY' && (
+            <div className="field">
+              <label htmlFor="quote-delivery">Delivery cost included in this quote</label>
+              <div className="input-group">
+                <span>{order.currency}</span>
+                <input id="quote-delivery" inputMode="numeric" value={deliveryAmount} onChange={(e) => setDeliveryAmount(e.target.value)} />
+              </div>
+              <span className="hint">The customer sees this as part of your final quote. You decide the delivery cost.</span>
+            </div>
+          )}
         </div>
         <div className="field">
           <label htmlFor="quote-note">
@@ -453,7 +490,7 @@ function QuoteSection({ order, onQuoted }: { order: Order; onQuoted: () => void 
         <button type="submit" className="btn btn-primary" disabled={sending}>
           {sending ? 'Sending…' : order.status === 'QUOTED' ? 'Send new quote' : 'Send quote'}
         </button>
-        <span className="hint">The customer gets a notification and can accept it or ask for changes.</span>
+        <span className="hint">The customer gets a notification and can accept it or ask for changes. No platform fee is charged to customers.</span>
       </form>
     </section>
   )
@@ -535,7 +572,7 @@ function PaymentSection({ order, onChange }: { order: Order; onChange: (o: Order
         <p className="small muted">
           {order.status === 'CANCELLED'
             ? 'This order is cancelled.'
-            : needsQuote(order.type)
+            : requiresQuote(order)
               ? 'You can record a deposit once the customer accepts the quote.'
               : 'You can record payments once you confirm the order.'}{' '}
           Money is never taken through the system.

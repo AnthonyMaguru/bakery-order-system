@@ -539,7 +539,10 @@ fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
   padding: 24px clamp(20px, 5vw, 72px) 32px;
 }
 .marketing-nav { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.wordmark { color: var(--ink); font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.04em; text-decoration: none; }
+.wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.04em; text-decoration: none; }
+.brand-logo { width: 34px; height: 34px; object-fit: contain; flex: 0 0 auto; }
+.mobile-topbar strong, .sidebar-brand strong { display: inline-flex; align-items: center; gap: 9px; }
+.mobile-topbar .brand-logo, .sidebar-brand .brand-logo { width: 30px; height: 30px; }
 .marketing-nav-links { display: flex; align-items: center; gap: 28px; }
 .public-menu-toggle { display: none; min-height: 44px; padding: 0 12px; border: none; border-radius: 9px; background: transparent; font-weight: 700; }
 .menu-icon { width: 22px; height: 18px; display: inline-flex; flex-direction: column; justify-content: space-between; }
@@ -570,6 +573,13 @@ fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
 .landing-workflow-list span { color: var(--accent); font-weight: 800; font-size: 12px; }
 .landing-workflow-list h3 { margin: 34px 0 10px; font-family: var(--font-display); font-size: 22px; line-height: 1.1; }
 .landing-workflow-list p { color: var(--ink-2); font-size: 14px; }
+.pricing-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.pricing-tier { min-width: 0; padding: 22px; border: 1px solid var(--line-strong); background: var(--surface); display: flex; flex-direction: column; gap: 12px; }
+.pricing-tier-featured { border: 2px solid var(--accent); box-shadow: 8px 8px 0 var(--accent-soft); transform: translateY(-8px); }
+.pricing-tier-number { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.pricing-tier h3 { margin: 0; font-family: var(--font-display); font-size: 21px; line-height: 1.15; }
+.pricing-amount { display: block; font-size: clamp(20px, 2vw, 27px); letter-spacing: -.03em; }
+.pricing-tier p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.55; }
 .landing-invite { max-width: 1240px; margin: 80px auto 0; padding: 42px clamp(24px, 5vw, 72px); background: var(--accent-soft); display: flex; align-items: end; justify-content: space-between; gap: 30px; }
 .landing-invite > div > p:last-child { margin-top: 14px; color: var(--ink-2); }
 .marketing-footer { max-width: 1240px; margin: 72px auto 0; padding-top: 18px; border-top: 1px solid var(--line-strong); display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
@@ -633,6 +643,8 @@ fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
   .hero-image { min-height: 480px; }
   .landing-workflow { grid-template-columns: 1fr; }
   .landing-workflow-list { grid-template-columns: 1fr; }
+  .pricing-tiers { grid-template-columns: 1fr; }
+  .pricing-tier-featured { transform: none; }
   .landing-workflow-list h3 { margin-top: 16px; }
   .landing-invite, .marketing-footer { align-items: flex-start; flex-direction: column; }
   .application-aside { margin-top: 36px; }

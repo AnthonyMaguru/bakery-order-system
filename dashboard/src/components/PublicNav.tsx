@@ -7,7 +7,8 @@ export function PublicNav() {
   return (
     <nav className="marketing-nav" aria-label="Main navigation">
       <Link className="wordmark" to="/" onClick={() => setOpen(false)}>
-        Crumb & Co.<span aria-hidden="true">.</span>
+        <img src="/app_logo.png" alt="" className="brand-logo" />
+        <span>Crumb &amp; Co.</span>
       </Link>
       <button
         type="button"

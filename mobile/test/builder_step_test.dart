@@ -38,7 +38,7 @@ final builderJson = [
 ];
 
 void main() {
-  testWidgets('the estimate follows what the customer picks', (tester) async {
+  testWidgets('the builder records choices without showing estimated prices', (tester) async {
     SharedPreferences.setMockInitialValues({});
 
     api = ApiClient(
@@ -63,31 +63,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Build your cake'), findsOneWidget);
-    expect(
-      find.text('UGX 60,000'),
-      findsOneWidget,
-      reason: 'the first size is picked to start',
-    );
+    expect(find.text('1 kg · serves 8'), findsOneWidget, reason: 'the first size is picked to start');
 
     await tester.tap(find.text('2 kg · serves 16'));
     await tester.pump();
 
-    expect(find.text('UGX 110,000'), findsOneWidget);
+    expect(find.text('2 kg · serves 16'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Pearls +UGX 10,000'),
+      find.text('Pearls'),
       100,
       scrollable: find.byType(Scrollable).last,
     );
 
-    await tester.tap(find.text('Pearls +UGX 10,000'));
+    await tester.tap(find.text('Pearls'));
     await tester.pump();
 
-    expect(find.text('UGX 120,000'), findsOneWidget);
-    expect(
-      draft.estimate,
-      120000,
-      reason: 'the choices are kept on the draft for the next steps',
-    );
+    final size = draft.groups.firstWhere((group) => group.name == 'Size');
+    final twoKilos = size.options.firstWhere((option) => option.name == '2 kg');
+    final decorations = draft.groups.firstWhere((group) => group.name == 'Decorations');
+    final pearls = decorations.options.firstWhere((option) => option.name == 'Pearls');
+    expect(draft.selection[size.id], contains(twoKilos.id));
+    expect(draft.selection[decorations.id], contains(pearls.id));
+    expect(find.textContaining('UGX'), findsNothing);
   });
 }

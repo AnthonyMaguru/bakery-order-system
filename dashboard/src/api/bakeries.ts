@@ -5,6 +5,19 @@ export const getMe = () => api<Me>('/users/me')
 
 export const getSettings = (bakeryId: string) => api<BakerySettings>(`/bakeries/${bakeryId}/settings`)
 
+export type CommissionSummary = {
+  commissionRateBps: number | null
+  completedOrders: number
+  accruedCommission: number
+  currency: string
+}
+
+export const getCommissionSummary = (bakeryId: string) =>
+  api<CommissionSummary>(`/bakeries/${bakeryId}/commission-summary`)
+
+export const respondToReview = (bakeryId: string, reviewId: string, response: string) =>
+  send('POST', `/bakeries/${bakeryId}/reviews/${reviewId}/response`, { response })
+
 export type SettingsUpdate = Partial<Omit<BakerySettings, 'id' | 'slug' | 'country' | 'currency' | 'timezone'>>
 
 export const updateSettings = (bakeryId: string, data: SettingsUpdate) =>

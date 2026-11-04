@@ -81,7 +81,7 @@ export function AdminLayout() {
 
       <aside id="dashboard-sidebar" className={`sidebar${menuOpen ? ' is-open' : ''}`}>
         <div className="sidebar-brand">
-          <strong>Crumb & Co.</strong>
+          <strong><img src="/app_logo.png" alt="" className="brand-logo" />Crumb &amp; Co.</strong>
           <span className="nav-badge" style={{ background: 'var(--accent)', color: '#fff', fontSize: 11, padding: '2px 8px' }}>
             Platform Admin
           </span>

@@ -36,16 +36,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   var _index = 0;
-  var _requestingNotifications = false;
+  var _finishing = false;
+  String? _error;
 
   Future<void> _finish({bool requestNotifications = false}) async {
-    if (requestNotifications) {
-      setState(() => _requestingNotifications = true);
-      await Push.instance.requestPermission();
-      if (mounted) setState(() => _requestingNotifications = false);
+    if (_finishing) return;
+    setState(() {
+      _finishing = true;
+      _error = null;
+    });
+    Object? notificationError;
+    try {
+      if (requestNotifications) {
+        try {
+          await Push.instance.requestPermission();
+        } catch (error) {
+          notificationError = error;
+        }
+      }
+      await const OnboardingStore().complete();
+      if (!mounted) return;
+      if (notificationError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Onboarding is complete. You can enable order notifications later in settings.',
+            ),
+          ),
+        );
+      }
+      widget.onComplete?.call();
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'Could not save your onboarding progress. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _finishing = false);
     }
-    await const OnboardingStore().complete();
-    if (mounted) widget.onComplete?.call();
   }
 
   @override
@@ -59,12 +89,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _requestingNotifications ? null : () => _finish(),
-                  child: const Text('Skip'),
-                ),
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'Crumb & Co. logo',
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Crumb & Co.',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _finishing ? null : () => _finish(),
+                    child: const Text('Skip'),
+                  ),
+                ],
               ),
               const Spacer(),
               AnimatedSwitcher(
@@ -119,22 +165,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: _requestingNotifications
+                onPressed: _finishing
                     ? null
                     : isLast
                     ? () => _finish(requestNotifications: true)
                     : () => setState(() => _index += 1),
                 child: Text(
-                  _requestingNotifications
-                      ? 'Setting up notifications...'
+                  _finishing
+                      ? 'Finishing...'
                       : isLast
                       ? 'Allow order updates'
                       : 'Continue',
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.danger),
+                ),
+              ],
               if (isLast)
                 TextButton(
-                  onPressed: _requestingNotifications ? null : () => _finish(),
+                  onPressed: _finishing ? null : () => _finish(),
                   child: const Text('Not now'),
                 ),
             ],

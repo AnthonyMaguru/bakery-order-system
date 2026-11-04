@@ -315,7 +315,10 @@ class _OutboxRow extends StatelessWidget {
           ),
           Row(
             children: [
-              if (!failed) TextButton(onPressed: () => Outbox.instance.flush(), child: const Text('Try now')),
+              TextButton(
+                onPressed: () => failed ? Outbox.instance.retry(item.clientRequestId) : Outbox.instance.flush(),
+                child: Text(failed ? 'Try again' : 'Try now'),
+              ),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                 onPressed: () => Outbox.instance.remove(item.clientRequestId),

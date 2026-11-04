@@ -113,6 +113,26 @@ const UserRoleInput = z.object({
   role: z.enum(["ADMIN", "CUSTOMER"]),
 });
 
+const CommissionRateInput = z.object({
+  commissionRateBps: z.number().int().min(0).max(10_000),
+});
+
+adminRouter.get("/settings", async (_req, res) => {
+  const settings = await prisma.platformSettings.findUnique({ where: { id: "global" } });
+  res.json({ commissionRateBps: settings?.commissionRateBps ?? null });
+});
+
+adminRouter.put("/settings/commission", async (req, res) => {
+  const { commissionRateBps } = CommissionRateInput.parse(req.body);
+  const settings = await prisma.platformSettings.upsert({
+    where: { id: "global" },
+    create: { id: "global", commissionRateBps },
+    update: { commissionRateBps },
+    select: { commissionRateBps: true, updatedAt: true },
+  });
+  res.json(settings);
+});
+
 /**
  * Promote or demote a user to/from platform ADMIN.
  * Admins cannot revoke their own admin role to prevent accidental lockout.

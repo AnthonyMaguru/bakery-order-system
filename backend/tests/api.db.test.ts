@@ -27,6 +27,7 @@ interface Day {
 
 describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
   let bakeryId: string;
+  let ntindaZoneId: string;
   let optionIds: Record<string, string>;
   let goldLeafId: string;
   let goldLeafStockId: string;
@@ -35,11 +36,14 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
   let customDay: string;
   let readyMadeDay: string;
   let originalLimit: number;
+  let originalCommissionRateBps: number | null;
+  let hadPlatformSettings: boolean;
 
   beforeAll(async () => {
     const bakery = await api.get("/api/bakeries/sweet-crumbs");
     expect(bakery.status).toBe(200);
     bakeryId = bakery.body.id;
+    ntindaZoneId = bakery.body.deliveryZones.find((zone: { name: string }) => zone.name === "Ntinda").id;
 
     const builder = await api.get(`/api/bakeries/${bakeryId}/builder`);
     optionIds = Object.fromEntries(
@@ -65,11 +69,27 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
 
     const settings = await api.get(`/api/bakeries/${bakeryId}/settings`).set(staff);
     originalLimit = settings.body.customCakesPerDay;
+    const platformSettings = await prisma.platformSettings.findUnique({ where: { id: "global" } });
+    hadPlatformSettings = platformSettings !== null;
+    originalCommissionRateBps = platformSettings?.commissionRateBps ?? null;
+    await prisma.platformSettings.upsert({
+      where: { id: "global" },
+      create: { id: "global", commissionRateBps: 1000 },
+      update: { commissionRateBps: 1000 },
+    });
   });
 
   afterAll(async () => {
     await api.patch(`/api/bakeries/${bakeryId}`).set(staff).send({ customCakesPerDay: originalLimit });
     await api.patch(`/api/bakeries/${bakeryId}/stock/${goldLeafStockId}`).set(staff).send({ quantity: 0 });
+    if (hadPlatformSettings) {
+      await prisma.platformSettings.update({
+        where: { id: "global" },
+        data: { commissionRateBps: originalCommissionRateBps },
+      });
+    } else {
+      await prisma.platformSettings.deleteMany({ where: { id: "global" } });
+    }
     await prisma.$disconnect();
   });
 
@@ -111,21 +131,21 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
     let orderId: string;
     const clientRequestId = `ready-${run}`;
 
-    it("is priced straight away and isn't saved twice when the app retries", async () => {
+    it("waits for a bakery quote and isn't saved twice when the app retries", async () => {
       const body = {
         bakeryId,
         clientRequestId,
         type: "STANDARD",
         dueDate: at(readyMadeDay),
         fulfilment: "DELIVERY",
-        deliveryArea: "ntinda",
+        deliveryZoneId: ntindaZoneId,
         deliveryAddress: "Plot 12, Ntinda",
         items: [{ productId, quantity: 1 }],
       };
       const first = await api.post("/api/orders").set(customer).send(body);
       expect(first.status).toBe(201);
-      expect(first.body.total).toBe(productPrice + 5000);
-      expect(first.body.deliveryArea).toBe("Ntinda");
+      expect(first.body.total).toBeNull();
+      expect(first.body.deliveryZoneName).toBe("Ntinda");
       orderId = first.body.id;
 
       const retry = await api.post("/api/orders").set(customer).send(body);
@@ -142,18 +162,25 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
         type: "STANDARD",
         dueDate: at(readyMadeDay),
         fulfilment: "DELIVERY",
-        deliveryArea: "Entebbe",
+        deliveryZoneId: "not-a-zone-for-this-bakery",
         deliveryAddress: "Somewhere",
         items: [{ productId }],
       });
       expect(res.status).toBe(400);
     });
 
-    it("can be confirmed by staff but not by the customer", async () => {
+    it("requires the customer to accept a delivery quote before confirmation", async () => {
       expect((await api.patch(`/api/orders/${orderId}/status`).set(customer).send({ status: "CONFIRMED" })).status).toBe(403);
-      const res = await api.patch(`/api/orders/${orderId}/status`).set(staff).send({ status: "CONFIRMED" });
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe("CONFIRMED");
+      expect((await api.patch(`/api/orders/${orderId}/status`).set(staff).send({ status: "CONFIRMED" })).status).toBe(409);
+      const quote = await api.post(`/api/orders/${orderId}/quotations`).set(staff).send({
+        amount: productPrice + 5000,
+        deliveryAmount: 5000,
+      });
+      expect(quote.status).toBe(201);
+      const accepted = await api.post(`/api/orders/${orderId}/accept-quote`).set(customer).send({ quotationId: quote.body.id });
+      expect(accepted.status).toBe(200);
+      expect(accepted.body.total).toBe(productPrice + 5000);
+      expect(accepted.body.deliveryAmount).toBe(5000);
     });
 
     it("can't be cancelled by the customer once it is being made", async () => {
@@ -164,13 +191,49 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
       expect(res.body.status).toBe("CANCELLED");
       expect(res.body.cancelledBy).toBe("BAKERY");
     });
+
+    it("excludes delivery from commission and allows one verified review", async () => {
+      const created = await api.post("/api/orders").set(customer).send({
+        bakeryId,
+        clientRequestId: `review-${run}`,
+        type: "STANDARD",
+        dueDate: at(readyMadeDay),
+        fulfilment: "DELIVERY",
+        deliveryZoneId: ntindaZoneId,
+        deliveryAddress: "Plot 12, Ntinda",
+        items: [{ productId, quantity: 1 }],
+      });
+      const reviewOrderId = created.body.id as string;
+      const quote = await api.post(`/api/orders/${reviewOrderId}/quotations`).set(staff).send({
+        amount: productPrice + 5000,
+        deliveryAmount: 5000,
+      });
+      await api.post(`/api/orders/${reviewOrderId}/accept-quote`).set(customer).send({ quotationId: quote.body.id });
+      await api.patch(`/api/orders/${reviewOrderId}/status`).set(staff).send({ status: "PREPARING" });
+      await api.patch(`/api/orders/${reviewOrderId}/status`).set(staff).send({ status: "READY" });
+      const completed = await api.patch(`/api/orders/${reviewOrderId}/status`).set(staff).send({ status: "COMPLETED" });
+      expect(completed.body.commissionRateBps).toBe(1000);
+      expect(completed.body.commissionAmount).toBe(Math.round(productPrice * 1000 / 10000));
+
+      const review = await api.post(`/api/orders/${reviewOrderId}/review`).set(customer).send({ rating: 5, body: "Beautiful cake" });
+      expect(review.status).toBe(201);
+      expect((await api.post(`/api/orders/${reviewOrderId}/review`).set(customer).send({ rating: 4 })).status).toBe(409);
+
+      const response = await api.post(`/api/bakeries/${bakeryId}/reviews/${review.body.id}/response`)
+        .set(staff)
+        .send({ response: "Thank you!" });
+      expect(response.status).toBe(200);
+      const publicReviews = await api.get(`/api/bakeries/${bakeryId}/reviews`);
+      expect(publicReviews.body[0]).toMatchObject({ rating: 5, body: "Beautiful cake", response: "Thank you!" });
+      expect(publicReviews.body[0].customer).toBeUndefined();
+    });
   });
 
   describe("a custom order from the cake builder", () => {
     let orderId: string;
     const design = ["Round", "2 tiers", "2 kg", "Vanilla", "Blush pink", "Pearls", "Fresh flowers"];
 
-    it("is saved with an estimate from the bakery's prices", async () => {
+    it("is saved without a customer price estimate", async () => {
       const res = await api.post("/api/orders").set(customer).send({
         bakeryId,
         type: "CUSTOM",
@@ -182,7 +245,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
         optionIds: design.map((name) => optionIds[name]),
       });
       expect(res.status).toBe(201);
-      expect(res.body.estimate).toBe(165000);
+      expect(res.body.estimate).toBeUndefined();
       expect(res.body.total).toBeNull();
       expect(res.body.selections).toHaveLength(7);
       orderId = res.body.id;
@@ -317,7 +380,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
     });
 
     it("lets only owners change settings, and keeps one payment method", async () => {
-      expect((await api.patch(`/api/bakeries/${bakeryId}`).set(customer).send({ deliveryFee: 1 })).status).toBe(403);
+      expect((await api.patch(`/api/bakeries/${bakeryId}`).set(customer).send({ commissionRateBps: 1 })).status).toBe(403);
       const res = await api.patch(`/api/bakeries/${bakeryId}`).set(staff).send({ acceptsCash: false, acceptsMobileMoney: false });
       expect(res.status).toBe(400);
     });

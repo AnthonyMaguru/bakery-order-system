@@ -17,12 +17,14 @@ const NEXT_BY_STAFF: Partial<Record<OrderStatus, OrderStatus>> = {
 };
 
 // Why staff can't move the order to `to`, or null when they can.
-export function staffStatusError(order: { status: OrderStatus; type: OrderType }, to: OrderStatus): string | null {
+export function staffStatusError(order: { status: OrderStatus; type: OrderType; fulfilment?: "PICKUP" | "DELIVERY" }, to: OrderStatus): string | null {
   if (order.status === to) return `The order is already ${label(to)}`;
   if (to === "CANCELLED") return "Use cancel instead, so the customer is told why";
   if (to === "QUOTED") return "Send a quote instead";
   if (order.status === "SUBMITTED" && to === "CONFIRMED") {
-    return order.type === "STANDARD" ? null : "Custom and bulk orders are confirmed when the customer accepts your quote";
+    return order.type === "STANDARD" && order.fulfilment !== "DELIVERY"
+      ? null
+      : "This order is confirmed when the customer accepts your quote";
   }
   if (NEXT_BY_STAFF[order.status] === to) return null;
   return `An order that is ${label(order.status)} can't be moved to ${label(to)}`;
@@ -48,6 +50,10 @@ export function paymentStatusFor(total: number | null, paid: number): PaymentSta
   if (paid <= 0) return "UNPAID";
   if (total !== null && paid >= total) return "PAID";
   return "DEPOSIT_PAID";
+}
+
+export function commissionAmountFor(total: number, deliveryAmount: number, rateBps: number): number {
+  return Math.round((Math.max(0, total - deliveryAmount) * rateBps) / 10_000);
 }
 
 // Orders that may still need the bakery's attention before they are due.
