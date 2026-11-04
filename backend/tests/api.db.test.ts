@@ -131,7 +131,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
     let orderId: string;
     const clientRequestId = `ready-${run}`;
 
-    it("is priced straight away and isn't saved twice when the app retries", async () => {
+    it("waits for a bakery quote and isn't saved twice when the app retries", async () => {
       const body = {
         bakeryId,
         clientRequestId,
@@ -144,7 +144,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("API with a database", () => {
       };
       const first = await api.post("/api/orders").set(customer).send(body);
       expect(first.status).toBe(201);
-      expect(first.body.total).toBe(productPrice);
+      expect(first.body.total).toBeNull();
       expect(first.body.deliveryZoneName).toBe("Ntinda");
       orderId = first.body.id;
 

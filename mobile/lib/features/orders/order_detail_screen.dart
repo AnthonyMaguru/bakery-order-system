@@ -330,7 +330,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Image.network(
                       order.designImageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     ),
                   ),
                 ),

@@ -135,8 +135,9 @@ class _AiCakeStudioStepState extends State<AiCakeStudioStep> {
     } on NetworkException catch (e) {
       if (mounted) setState(() => _errorMessage = e.toString());
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() => _errorMessage = 'Could not generate cake image: $e');
+      }
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -406,8 +407,9 @@ class _AiCakeStudioStepState extends State<AiCakeStudioStep> {
                                           fit: BoxFit.cover,
                                           loadingBuilder:
                                               (context, child, progress) {
-                                                if (progress == null)
+                                                if (progress == null) {
                                                   return child;
+                                                }
                                                 return Container(
                                                   color: AppColors.sand,
                                                   alignment: Alignment.center,

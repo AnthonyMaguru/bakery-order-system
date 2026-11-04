@@ -268,8 +268,7 @@ class _PersonalStepState extends State<PersonalStep> {
                               : Image.network(
                                   d.designImageUrl!,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _fallbackDesign(),
+                                  errorBuilder: (_, _, _) => _fallbackDesign(),
                                 ))
                         : _fallbackDesign()),
             ),

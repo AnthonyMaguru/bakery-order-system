@@ -67,11 +67,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
       widget.onComplete?.call();
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error =
               'Could not save your onboarding progress. Please try again.',
         );
+      }
     } finally {
       if (mounted) setState(() => _finishing = false);
     }

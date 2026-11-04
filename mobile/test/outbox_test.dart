@@ -28,8 +28,9 @@ class FakeBackend {
     }
     final body = jsonDecode(request.body) as Map<String, dynamic>;
     posted.add(body);
-    if (refuseWith != null)
+    if (refuseWith != null) {
       return http.Response(jsonEncode({'error': refuseWith}), 409);
+    }
     return http.Response(jsonEncode(orderJson), 201);
   });
 }
