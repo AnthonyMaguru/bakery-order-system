@@ -58,6 +58,7 @@ export async function runDeadlineReminderCheck(now: Date = new Date()) {
         title: "Orders due soon",
         body,
         orderId: firstOrder.id,
+        type: "DEADLINE_REMINDER",
       });
       sent += 1;
     } finally {

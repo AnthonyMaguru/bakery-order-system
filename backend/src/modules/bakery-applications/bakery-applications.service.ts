@@ -1,9 +1,10 @@
 import { badRequest, conflict, notFound } from "../../lib/http-error.js";
+import { notifyAdmins } from "../../lib/notifications.js";
 import { prisma } from "../../lib/prisma.js";
 import type { BakeryApplicationInput } from "./bakery-applications.schemas.js";
 
-export function createApplication(data: BakeryApplicationInput) {
-  return prisma.bakeryApplication.create({
+export async function createApplication(data: BakeryApplicationInput) {
+  const application = await prisma.bakeryApplication.create({
     data: {
       ...data,
       email: data.email.toLowerCase(),
@@ -11,6 +12,15 @@ export function createApplication(data: BakeryApplicationInput) {
     },
     select: { id: true, status: true, createdAt: true },
   });
+
+  void notifyAdmins({
+    title: "New bakery application",
+    body: `${data.bakeryName} has submitted a bakery application.`,
+    type: "BAKERY_APPLICATION",
+    link: "/admin/applications",
+  });
+
+  return application;
 }
 
 export function listApplications() {

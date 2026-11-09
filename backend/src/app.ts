@@ -12,6 +12,7 @@ import { productsRouter } from "./modules/products/products.routes.js";
 import { stockRouter } from "./modules/stock/stock.routes.js";
 import { uploadsRouter } from "./modules/uploads/uploads.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
+import { notificationsRouter } from "./modules/notifications/notifications.routes.js";
 import { bakeryApplicationsRouter } from "./modules/bakery-applications/bakery-applications.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { aiRouter } from "./modules/ai/ai.routes.js";
@@ -50,6 +51,7 @@ export function createApp() {
   });
 
   app.use("/api/users", usersRouter);
+  app.use("/api/notifications", notificationsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/bakery-applications", bakeryApplicationsRouter);
   app.use("/api/orders", ordersRouter);

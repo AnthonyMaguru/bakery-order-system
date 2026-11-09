@@ -236,3 +236,27 @@ export interface OrdersSummary {
   counts: Partial<Record<OrderStatus, number>>
   needsAttention: number
 }
+
+// Persistent notifications returned by GET /notifications.
+export type NotificationType =
+  | 'NEW_ORDER'
+  | 'ORDER_UPDATE'
+  | 'ORDER_MESSAGE'
+  | 'DEADLINE_REMINDER'
+  | 'BAKERY_APPLICATION'
+  | 'SYSTEM'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  body: string
+  link: string | null
+  createdAt: string
+  readAt: string | null
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[]
+  unreadCount: number
+}

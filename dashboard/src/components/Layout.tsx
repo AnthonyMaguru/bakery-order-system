@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useBakery } from '../context/bakery-context'
 import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
 import { Icon, type IconName } from './Icon'
+import { NotificationBell } from './NotificationBell'
 
 const GROUPS: { label: string; links: { to: string; label: string; icon: IconName }[] }[] = [
   { label: 'Work', links: [
@@ -65,6 +66,7 @@ export function Layout() {
     <div className="app">
       <header className="mobile-topbar">
         <strong><img src="/app_logo.png" alt="" className="brand-logo" />Crumb &amp; Co.</strong>
+        <NotificationBell />
         <button type="button" className="menu-button" aria-label={menuOpen ? 'Close dashboard navigation' : 'Open dashboard navigation'} aria-expanded={menuOpen} aria-controls="dashboard-sidebar" onClick={() => setMenuOpen((open) => !open)}>
           <span aria-hidden="true" className={`menu-icon${menuOpen ? ' is-open' : ''}`}>
             <span />
@@ -104,6 +106,9 @@ export function Layout() {
         </div>
       </aside>
       <main className="main">
+        <div className="notification-toolbar">
+          <NotificationBell />
+        </div>
         <Outlet />
       </main>
     </div>

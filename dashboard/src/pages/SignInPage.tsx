@@ -11,7 +11,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMe } from '../api/bakeries'
 import { send } from '../api/client'
-import { authMessage, firebaseAuth } from '../lib/firebase'
+import { authMessage, firebaseAuth, firebaseEnabled } from '../lib/firebase'
 import { PublicNav } from '../components/PublicNav'
 
 type Mode = 'sign-in' | 'create' | 'reset'
@@ -27,6 +27,8 @@ export function SignInPage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!firebaseEnabled) return
+
     return onAuthStateChanged(firebaseAuth(), (user) => {
       if (user) {
         getMe()
@@ -58,6 +60,18 @@ export function SignInPage() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (!firebaseEnabled) {
+      return run(async () => {
+        const me = await getMe()
+
+        if (me.role === 'ADMIN' && me.bakeries.length === 0) {
+          navigate('/admin/overview', { replace: true })
+        } else {
+          navigate('/orders', { replace: true })
+        }
+      })
+    }
+
     const auth = firebaseAuth()
     if (mode === 'reset') {
       return run(async () => {
@@ -110,17 +124,17 @@ export function SignInPage() {
           )}
 
           <form className="stack-lg" onSubmit={submit} noValidate>
-          {mode === 'create' && (
+          {firebaseEnabled && mode === 'create' && (
             <div className="field">
               <label htmlFor="name">Your name</label>
               <input id="name" className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           )}
-          <div className="field">
+          {firebaseEnabled && <div className="field">
             <label htmlFor="email">Email</label>
             <input id="email" type="email" className="input" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          {mode !== 'reset' && (
+          </div>}
+          {firebaseEnabled && mode !== 'reset' && (
             <div className="field">
               <label htmlFor="password">Password</label>
               <input
@@ -145,11 +159,11 @@ export function SignInPage() {
             </p>
           )}
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-            {busy ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : mode === 'create' ? 'Create account' : 'Send reset link'}
+            {busy ? 'Please wait…' : !firebaseEnabled ? 'Continue to dashboard' : mode === 'sign-in' ? 'Sign in' : mode === 'create' ? 'Create account' : 'Send reset link'}
           </button>
           </form>
 
-          {mode !== 'reset' && (
+          {firebaseEnabled && mode !== 'reset' && (
             <>
               <div className="row" style={{ gap: 12, color: 'var(--muted)' }}>
                 <span style={{ flex: 1, height: 1, background: 'var(--line-strong)' }} />
@@ -162,7 +176,7 @@ export function SignInPage() {
             </>
           )}
 
-          <div className="stack auth-links">
+          {firebaseEnabled && <div className="stack auth-links">
             {mode === 'sign-in' && (
               <>
                 <button type="button" className="btn btn-quiet" onClick={() => setMode('reset')}>
@@ -178,7 +192,7 @@ export function SignInPage() {
                 Back to sign in
               </button>
             )}
-          </div>
+          </div>}
         </div>
         </section>
       </div>

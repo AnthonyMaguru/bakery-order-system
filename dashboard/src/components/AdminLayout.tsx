@@ -5,6 +5,7 @@ import { getMe } from '../api/bakeries'
 import { getAdminOverview } from '../api/admin'
 import { firebaseAuth, firebaseEnabled } from '../lib/firebase'
 import { Icon, type IconName } from './Icon'
+import { NotificationBell } from './NotificationBell'
 import type { Me } from '../types/api'
 
 const ADMIN_LINKS: { to: string; label: string; icon: IconName }[] = [
@@ -45,6 +46,7 @@ export function AdminLayout() {
       <header className="mobile-topbar">
         <strong>Platform Admin<span aria-hidden="true">.</span></strong>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell />
           <button
             type="button"
             className="btn btn-sm btn-danger-outline"
@@ -129,6 +131,7 @@ export function AdminLayout() {
             </span>
           </div>
           <div className="admin-topbar-right">
+            <NotificationBell />
             <div className="admin-user-badge">
               <span className="admin-avatar" aria-hidden="true">🛡️</span>
               <div className="admin-user-text">

@@ -10,6 +10,7 @@ export { Prisma } from "../../generated/prisma/client.js";
 export type {
   Bakery,
   MemberRole,
+  NotificationType,
   OrderStatus,
   OrderType,
   PaymentStatus,

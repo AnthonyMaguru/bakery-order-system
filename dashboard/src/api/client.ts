@@ -25,7 +25,9 @@ async function authHeaders(): Promise<Record<string, string>> {
   if (import.meta.env.PROD) throw new Error('Firebase authentication is required in production.')
   // Test login while there is no Firebase project; needs AUTH_DEV_BYPASS=true on the backend.
   const devUser = import.meta.env.VITE_DEV_USER
-  if (devUser) return { 'x-dev-user': devUser, 'x-dev-role': 'STAFF' }
+  const configuredRole = import.meta.env.VITE_DEV_ROLE as string | undefined
+  const devRole = configuredRole === 'ADMIN' ? 'ADMIN' : 'STAFF'
+  if (devUser) return { 'x-dev-user': devUser, 'x-dev-role': devRole }
   return {}
 }
 

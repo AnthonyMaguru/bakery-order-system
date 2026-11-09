@@ -95,6 +95,16 @@ enum BakeryApplicationStatus {
   DECLINED
 }
 
+// Categories used by the persistent notification centre.
+enum NotificationType {
+  NEW_ORDER
+  ORDER_UPDATE
+  ORDER_MESSAGE
+  DEADLINE_REMINDER
+  BAKERY_APPLICATION
+  SYSTEM
+}
+
 model User {
   id          String   @id @default(cuid())
   firebaseUid String   @unique
@@ -112,8 +122,9 @@ model User {
   quotations  Quotation[]
   comments    OrderComment[]
   payments    Payment[]
-  uploads     Upload[]
-  reviews     BakeryReview[]
+  uploads       Upload[]
+  reviews       BakeryReview[]
+  notifications Notification[]
 }
 
 model Bakery {
@@ -496,4 +507,21 @@ model Upload {
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, createdAt])
+}
+
+// Persistent notifications belong to individual user accounts.
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

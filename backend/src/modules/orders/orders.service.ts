@@ -259,6 +259,7 @@ export async function createOrder(user: User, input: CreateOrderInput) {
       title: input.type === "STANDARD" ? "New order" : "New order to quote",
       body: `BK${order.number} from ${user.name ?? "a customer"}`,
       orderId: order.id,
+      type: "NEW_ORDER",
     });
     return { order, created: true };
   } catch (err) {
@@ -306,7 +307,7 @@ export async function updateStatus(user: User, id: string, status: OrderStatus) 
   const updated = await prisma.order.findUniqueOrThrow({ where: { id }, include: orderDetail });
   const message = statusMessages[status];
   if (message) {
-    void notifyUser(order.customerId, { title: `Order BK${order.number}`, body: message(order.fulfilment === "PICKUP"), orderId: id });
+    void notifyUser(order.customerId, { title: `Order BK${order.number}`, body: message(order.fulfilment === "PICKUP"), orderId: id, type: "ORDER_UPDATE" });
   }
   return updated;
 }
@@ -330,6 +331,7 @@ export async function addQuotation(user: User, id: string, amount: number, deliv
     title: "Your quote is ready",
     body: `${order.bakery.name}: ${formatMoney(amount, order.currency)}`,
     orderId: id,
+    type: "ORDER_UPDATE",
   });
   return quotation;
 }
@@ -360,6 +362,7 @@ export async function acceptQuote(user: User, id: string, quotationId: string) {
     title: "Quote accepted",
     body: `BK${order.number}: ${formatMoney(latest.amount, order.currency)}`,
     orderId: id,
+    type: "ORDER_UPDATE",
   });
   return updated;
 }
@@ -383,6 +386,7 @@ export async function cancelOrder(user: User, id: string, reason?: string) {
     title: `Order BK${order.number} cancelled`,
     body: reason ?? (by === "CUSTOMER" ? "The customer cancelled." : "The bakery cancelled."),
     orderId: id,
+    type: "ORDER_UPDATE" as const,
   };
   void (by === "CUSTOMER" ? notifyBakery(order.bakeryId, notification) : notifyUser(order.customerId, notification));
   return updated;
@@ -416,6 +420,7 @@ export async function addPayment(user: User, id: string, payment: PaymentInput) 
     title: "Payment recorded",
     body: `${order.bakery.name} received ${formatMoney(payment.amount, order.currency)}.`,
     orderId: id,
+    type: "ORDER_UPDATE",
   });
   return updated;
 }
@@ -446,9 +451,9 @@ export async function addComment(user: User, id: string, body: string) {
     include: { author: { select: { id: true, name: true } } },
   });
   if (fromBakery) {
-    void notifyUser(order.customerId, { title: `Message from ${order.bakery.name}`, body, orderId: id });
+    void notifyUser(order.customerId, { title: `Message from ${order.bakery.name}`, body, orderId: id, type: "ORDER_MESSAGE" });
   } else {
-    void notifyBakery(order.bakeryId, { title: `Message about BK${order.number}`, body, orderId: id });
+    void notifyBakery(order.bakeryId, { title: `Message about BK${order.number}`, body, orderId: id, type: "ORDER_MESSAGE" });
   }
   return comment;
 }
